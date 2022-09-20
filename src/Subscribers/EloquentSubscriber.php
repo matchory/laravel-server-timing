@@ -33,7 +33,11 @@ class EloquentSubscriber
 
     public function handleTotal(QueryExecuted $event): void
     {
-        $key = 'Database (' . ($event->connectionName) . ')';
+        $key = 'Database';
+
+        if ($event->connectionName && $event->connectionName !== 'default') {
+            $key .= " ({$event->connectionName})";
+        }
 
         $previous = $this->timing->getDuration($key) ?? 0.0;
         $this->timing->setDuration($key, $previous + $event->time);
