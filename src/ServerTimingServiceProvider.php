@@ -31,10 +31,6 @@ class ServerTimingServiceProvider extends EventServiceProvider
         if ($this->app->runningInConsole()) {
             $this->registerPublishing();
         }
-
-        if (isset($_SERVER['LARAVEL_OCTANE'])) {
-            $this->setupOctane();
-        }
     }
 
     /**
@@ -60,9 +56,5 @@ class ServerTimingServiceProvider extends EventServiceProvider
                 'config.php',
             ]) => config_path('timing.php'),
         ], 'server-timing-config');
-    }
-
-    private function setupOctane(): void
-    {
     }
 }
