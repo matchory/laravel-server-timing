@@ -45,6 +45,10 @@ class EloquentSubscriber
 
     public function subscribe(Dispatcher $events): void
     {
+        if ( ! config('timing.enabled', true)) {
+            return;
+        }
+
         if (config('timing.measure_database', true)) {
             $events->listen(
                 QueryExecuted::class,
