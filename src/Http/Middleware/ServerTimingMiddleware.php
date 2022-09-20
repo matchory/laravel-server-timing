@@ -4,7 +4,6 @@ namespace Matchory\ServerTiming\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Matchory\ServerTiming\ServerTiming;
 use Symfony\Component\HttpFoundation\Response;
@@ -33,17 +32,6 @@ class ServerTimingMiddleware
         }
 
         $this->timing->setDuration('Bootstrap', $this->getElapsedTime());
-        if ( ! $this->isOctane()) {
-            Log::error('Not Octane - adding bootstrap time', [
-                'LARAVEL_OCTANE' => $_SERVER['LARAVEL_OCTANE'] ?? null,
-            ]);
-        } else {
-            Log::error('Inside Octane - omitting bootstrap time', [
-                'LARAVEL_OCTANE' => $_SERVER['LARAVEL_OCTANE'] ?? null,
-            ]);
-
-        }
-
         $this->timing->start('App');
 
         $response = $next($request);
@@ -52,10 +40,7 @@ class ServerTimingMiddleware
         $this->timing->stopAllUnfinishedEvents();
 
         $total = array_sum($this->timing->events());
-   #     $this->timing->setDuration('Total', $total);
-
-#        if ( ! $this->isOctane()) {
-#        }
+        $this->timing->setDuration('Total', $total);
 
         $response->headers->set(self::HEADER, $this->generateHeaders());
 
@@ -86,10 +71,5 @@ class ServerTimingMiddleware
     protected function getElapsedTime(): float
     {
         return (microtime(true) - $this->timing->getStart()) * 1000;
-    }
-
-    private function isOctane(): bool
-    {
-        return (bool)($_SERVER['LARAVEL_OCTANE'] ?? false);
     }
 }
