@@ -1,35 +1,68 @@
 <?php
 
-namespace BeyondCode\ServerTiming;
+namespace Matchory\ServerTiming;
 
-use Illuminate\Support\ServiceProvider;
+use Illuminate\Foundation\Support\Providers\EventServiceProvider;
+use Matchory\ServerTiming\Subscribers\EloquentSubscriber;
+use Matchory\ServerTiming\Subscribers\OctaneSubscriber;
+use Symfony\Component\Stopwatch\Stopwatch;
 
-class ServerTimingServiceProvider extends ServiceProvider
+use function implode;
+
+use const DIRECTORY_SEPARATOR as DS;
+
+/**
+ * ServerTimingServiceProvider
+ *
+ * @bundle Matchory\ServerTiming
+ */
+class ServerTimingServiceProvider extends EventServiceProvider
 {
+    protected $subscribe = [
+        OctaneSubscriber::class,
+        EloquentSubscriber::class,
+    ];
+
     /**
      * Bootstrap the application services.
      */
-    public function boot()
+    public function boot(): void
     {
         if ($this->app->runningInConsole()) {
             $this->registerPublishing();
+        }
+
+        if (isset($_SERVER['LARAVEL_OCTANE'])) {
+            $this->setupOctane();
         }
     }
 
     /**
      * Register the application services.
      */
-    public function register()
+    public function register(): void
     {
-        $this->app->singleton(ServerTiming::class, function ($app) {
-            return new ServerTiming(new \Symfony\Component\Stopwatch\Stopwatch());
-        });
+        parent::register();
+
+        $this->app->singleton(
+            ServerTiming::class,
+            fn() => new ServerTiming(new Stopwatch())
+        );
     }
 
-    protected function registerPublishing()
+    private function registerPublishing(): void
     {
         $this->publishes([
-            __DIR__.'/config/config.php' => config_path('timing.php'),
+            implode(DS, [
+                __DIR__,
+                'Resources',
+                'config',
+                'config.php',
+            ]) => config_path('timing.php'),
         ], 'server-timing-config');
+    }
+
+    private function setupOctane(): void
+    {
     }
 }

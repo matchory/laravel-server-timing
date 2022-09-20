@@ -1,40 +1,53 @@
 {
-    "name": "beyondcode/laravel-server-timing",
+    "name": "matchory/laravel-server-timing",
     "description": "Add Server-Timing header information from within your Laravel apps.",
     "keywords": [
-        "beyondcode",
+        "matchory",
+        "laravel",
+        "server-timing",
+        "performance",
+        "laravel-package",
         "laravel-server-timing"
     ],
-    "homepage": "https://github.com/beyondcode/laravel-server-timing",
+    "homepage": "https://github.com/matchory/laravel-server-timing",
     "license": "MIT",
     "authors": [
         {
+            "name": "Moritz Friedrich",
+            "email": "moritz@matchory.com",
+            "homepage": "https://matchory.com",
+            "role": "Developer"
+        },
+        {
             "name": "Marcel Pociot",
             "email": "marcel@beyondco.de",
-            "homepage": "https://beyondcode.de",
+            "homepage": "https://beyondco.de",
             "role": "Developer"
         }
     ],
     "require": {
-        "php": "^7.2|^8.0",
-        "illuminate/support": "5.8.*|^6.0|^7.0|^8.0|^9.0",
-        "symfony/stopwatch": "^4.0|^5.0|^6.0"
+        "php": "^8.1",
+        "illuminate/support": "^8.0|^9.0",
+        "symfony/stopwatch": "^5.0|^6.0"
     },
     "require-dev": {
-        "orchestra/testbench": "^4.6|^5.0|^6.0",
-        "phpunit/phpunit": "^8.0|^9.0"
+        "laravel/octane": "^1.3",
+        "orchestra/testbench": "^6.0|^7.0",
+        "phpunit/phpunit": "^8.0|^9.0",
+        "roave/security-advisories": "dev-latest",
+        "vimeo/psalm": "^4.27"
     },
     "autoload": {
         "psr-4": {
-            "BeyondCode\\ServerTiming\\": "src"
+            "Matchory\\ServerTiming\\": "src"
         },
         "files": [
-            "src/helpers.php"
+            "src/functions.php"
         ]
     },
     "autoload-dev": {
         "psr-4": {
-            "BeyondCode\\ServerTiming\\Tests\\": "tests"
+            "Matchory\\ServerTiming\\Tests\\": "tests"
         }
     },
     "scripts": {
@@ -42,15 +55,20 @@
         "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "allow-plugins": {
+            "composer/package-versions-deprecated": true
+        }
     },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "extra": {
         "laravel": {
             "providers": [
-                "BeyondCode\\ServerTiming\\ServerTimingServiceProvider"
+                "Matchory\\ServerTiming\\ServerTimingServiceProvider"
             ],
             "aliases": {
-                "Stopwatch": "BeyondCode\\ServerTiming\\Facades\\ServerTiming"
+                "ServerTiming": "Matchory\\ServerTiming\\Facades\\ServerTiming"
             }
         }
     }

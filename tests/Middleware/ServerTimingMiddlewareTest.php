@@ -1,47 +1,51 @@
 <?php
 
-namespace BeyondCode\ServerTiming\Tests\Middleware;
+namespace Matchory\ServerTiming\Tests\Middleware;
 
-use BeyondCode\ServerTiming\Middleware\ServerTimingMiddleware;
-use BeyondCode\ServerTiming\ServerTiming;
 use Illuminate\Http\Request;
+use Matchory\ServerTiming\Http\Middleware\ServerTimingMiddleware;
+use Matchory\ServerTiming\ServerTiming;
 use Orchestra\Testbench\TestCase;
-use Symfony\Component\Stopwatch\Stopwatch;
+use PHPUnit\Framework\Exception;
+use PHPUnit\Framework\ExpectationFailedException;
+use SebastianBergmann\RecursionContext\InvalidArgumentException;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Stopwatch\Stopwatch;
 
 class ServerTimingMiddlewareTest extends TestCase
 {
-    /** @test */
-    public function it_add_server_timing_header()
+    /**
+     * @test
+     *
+     * @throws Exception
+     * @throws ExpectationFailedException
+     * @throws InvalidArgumentException
+     */
+    public function it_adds_a_server_timing_header(): void
     {
-        $request = new Request;
-
+        $request = new Request();
         $timing = new ServerTiming(new Stopwatch());
-
         $middleware = new ServerTimingMiddleware($timing);
-
-        $response = $middleware->handle($request, function ($req) {
-            return new Response();
-        });
+        $response = $middleware->handle($request, fn($req) => new Response());
 
         $this->assertArrayHasKey('server-timing', $response->headers->all());
-
     }
 
-    /** @test */
-    public function it_is_bypassed_if_configuration_false()
+    /**
+     * @test
+     *
+     * @throws Exception
+     * @throws ExpectationFailedException
+     * @throws InvalidArgumentException
+     */
+    public function it_is_bypassed_if_configuration_false(): void
     {
         $this->app['config']->set('timing.enabled', false);
 
-        $request = new Request;
-
+        $request = new Request();
         $timing = new ServerTiming(new Stopwatch());
-
         $middleware = new ServerTimingMiddleware($timing);
-
-        $response = $middleware->handle($request, function ($req) {
-            return new Response();
-        });
+        $response = $middleware->handle($request, fn($req) => new Response());
 
         $this->assertArrayNotHasKey('server-timing', $response->headers->all());
     }
