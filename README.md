@@ -1,8 +1,8 @@
 Laravel Server Timings
 ======================
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/matchory/laravel-server-timing.svg?style=flat-square)](https://packagist.org/packages/matchory/laravel-server-timing)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/matchory/laravel-server-timing.svg?style=flat)](https://packagist.org/packages/matchory/laravel-server-timing)
 ![Build Status](https://github.com/matchory/laravel-server-timing/actions/workflows/tests.yaml/badge.svg)
-[![Total Downloads](https://img.shields.io/packagist/dt/matchory/laravel-server-timing.svg?style=flat-square)](https://packagist.org/packages/matchory/laravel-server-timing)
+[![Total Downloads](https://img.shields.io/packagist/dt/matchory/laravel-server-timing.svg?style=flat)](https://packagist.org/packages/matchory/laravel-server-timing)
 [![Laravel Octane Compatible](https://img.shields.io/badge/Laravel%20Octane-Compatible-success?style=flat&logo=laravel)](https://github.com/laravel/octane)
 
 > Add Server-Timing header information from within your Laravel apps.
