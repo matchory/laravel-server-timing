@@ -147,6 +147,6 @@ class ServerTiming
             return (int)LARAVEL_START;
         }
 
-        return (float)($_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true));
+        return $_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true);
     }
 }
