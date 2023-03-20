@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Matchory\ServerTiming;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider;

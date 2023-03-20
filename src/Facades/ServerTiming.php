@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Matchory\ServerTiming\Facades;
 
 use Illuminate\Support\Facades\Facade;

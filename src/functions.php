@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Matchory\ServerTiming\ServerTiming;
 
 if ( ! function_exists('measure_timing')) {

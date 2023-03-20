@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Matchory\ServerTiming\Http\Middleware;
 
 use Closure;
