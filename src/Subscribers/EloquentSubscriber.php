@@ -10,9 +10,9 @@ use Matchory\ServerTiming\ServerTiming;
 
 use function config;
 
-class EloquentSubscriber
+readonly class EloquentSubscriber
 {
-    public function __construct(private readonly ServerTiming $timing)
+    public function __construct(private ServerTiming $timing)
     {
     }
 

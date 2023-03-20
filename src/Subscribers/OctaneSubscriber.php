@@ -9,9 +9,9 @@ use Laravel\Octane\Events\RequestReceived;
 use Laravel\Octane\Events\WorkerStarting;
 use Matchory\ServerTiming\ServerTiming;
 
-class OctaneSubscriber
+readonly class OctaneSubscriber
 {
-    public function __construct(private readonly ServerTiming $timing)
+    public function __construct(private ServerTiming $timing)
     {
     }
 
