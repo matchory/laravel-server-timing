@@ -61,7 +61,7 @@ class ServerTimingMiddleware
             );
 
             if ( ! is_null($duration)) {
-                $header .= "dur=${duration}";
+                $header .= "dur={$duration}";
             }
 
             $header .= ", ";
