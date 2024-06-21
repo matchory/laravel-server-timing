@@ -9,6 +9,7 @@ use Symfony\Component\Stopwatch\Stopwatch;
 use function defined;
 use function microtime;
 
+// @phpstan-ignore-next-line
 use const LARAVEL_START;
 
 class ServerTiming

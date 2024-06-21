@@ -20,6 +20,9 @@ use const DIRECTORY_SEPARATOR as DS;
  */
 class ServerTimingServiceProvider extends EventServiceProvider
 {
+    /**
+     * @var string[]
+     */
     protected $subscribe = [
         OctaneSubscriber::class,
         EloquentSubscriber::class,

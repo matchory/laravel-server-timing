@@ -3,21 +3,19 @@
 namespace Matchory\ServerTiming\Tests;
 
 use Matchory\ServerTiming\ServerTiming;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Exception;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
-use SebastianBergmann\RecursionContext\InvalidArgumentException;
 use Symfony\Component\Stopwatch\Stopwatch;
 
 class ServerTimingTest extends TestCase
 {
     /**
-     * @test
-     *
      * @throws Exception
      * @throws ExpectationFailedException
-     * @throws InvalidArgumentException
      */
+    #[Test]
     public function it_can_set_custom_measures(): void
     {
         $timing = new ServerTiming(new Stopwatch());
@@ -31,12 +29,10 @@ class ServerTimingTest extends TestCase
     }
 
     /**
-     * @test
-     *
      * @throws Exception
      * @throws ExpectationFailedException
-     * @throws InvalidArgumentException
      */
+    #[Test]
     public function it_can_set_custom_float_measures(): void
     {
         $timing = new ServerTiming(new Stopwatch());
@@ -50,12 +46,10 @@ class ServerTimingTest extends TestCase
     }
 
     /**
-     * @test
-     *
      * @throws Exception
      * @throws ExpectationFailedException
-     * @throws InvalidArgumentException
      */
+    #[Test]
     public function it_can_set_durations_with_callables(): void
     {
         $timing = new ServerTiming(new Stopwatch());
@@ -71,12 +65,10 @@ class ServerTimingTest extends TestCase
     }
 
     /**
-     * @test
-     *
      * @throws Exception
      * @throws ExpectationFailedException
-     * @throws InvalidArgumentException
      */
+    #[Test]
     public function it_can_set_events_without_duration(): void
     {
         $timing = new ServerTiming(new Stopwatch());
@@ -90,12 +82,10 @@ class ServerTimingTest extends TestCase
     }
 
     /**
-     * @test
-     *
      * @throws Exception
      * @throws ExpectationFailedException
-     * @throws InvalidArgumentException
      */
+    #[Test]
     public function it_can_set_multiple_events(): void
     {
         $timing = new ServerTiming(new Stopwatch());
@@ -113,12 +103,10 @@ class ServerTimingTest extends TestCase
     }
 
     /**
-     * @test
-     *
      * @throws Exception
      * @throws ExpectationFailedException
-     * @throws InvalidArgumentException
      */
+    #[Test]
     public function it_can_start_and_stop_events(): void
     {
         $timing = new ServerTiming(new Stopwatch());
@@ -134,12 +122,10 @@ class ServerTimingTest extends TestCase
     }
 
     /**
-     * @test
-     *
      * @throws Exception
      * @throws ExpectationFailedException
-     * @throws InvalidArgumentException
      */
+    #[Test]
     public function it_can_start_and_stop_events_using_measure(): void
     {
         $timing = new ServerTiming(new Stopwatch());
@@ -155,12 +141,10 @@ class ServerTimingTest extends TestCase
     }
 
     /**
-     * @test
-     *
      * @throws Exception
      * @throws ExpectationFailedException
-     * @throws InvalidArgumentException
      */
+    #[Test]
     public function it_can_stop_started_events(): void
     {
         $timing = new ServerTiming(new Stopwatch());
@@ -175,12 +159,10 @@ class ServerTimingTest extends TestCase
     }
 
     /**
-     * @test
-     *
      * @throws Exception
      * @throws ExpectationFailedException
-     * @throws InvalidArgumentException
      */
+    #[Test]
     public function it_can_be_reset(): void
     {
         $timing = new ServerTiming(new Stopwatch());
