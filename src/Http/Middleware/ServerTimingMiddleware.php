@@ -17,9 +17,7 @@ class ServerTimingMiddleware
 {
     private const HEADER = 'Server-Timing';
 
-    public function __construct(private readonly ServerTiming $timing)
-    {
-    }
+    public function __construct(private readonly ServerTiming $timing) {}
 
     /**
      * @param Request                    $request
@@ -57,10 +55,10 @@ class ServerTimingMiddleware
             $header .= sprintf(
                 '%s;desc="%s";',
                 Str::slug($eventName),
-                $eventName
+                $eventName,
             );
 
-            if ( ! is_null($duration)) {
+            if (! is_null($duration)) {
                 $header .= "dur={$duration}";
             }
 

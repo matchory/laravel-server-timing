@@ -12,9 +12,7 @@ use function config;
 
 readonly class EloquentSubscriber
 {
-    public function __construct(private ServerTiming $timing)
-    {
-    }
+    public function __construct(private ServerTiming $timing) {}
 
     public function handleQuery(QueryExecuted $event): void
     {
@@ -35,14 +33,14 @@ readonly class EloquentSubscriber
 
     public function subscribe(Dispatcher $events): void
     {
-        if ( ! config('timing.enabled', true)) {
+        if (! config('timing.enabled', true)) {
             return;
         }
 
         if (config('timing.measure_database', true)) {
             $events->listen(
                 QueryExecuted::class,
-                [self::class, 'handleTotal']
+                [self::class, 'handleTotal'],
             );
         }
 
@@ -52,7 +50,7 @@ readonly class EloquentSubscriber
         ) {
             $events->listen(
                 QueryExecuted::class,
-                [self::class, 'handleQuery']
+                [self::class, 'handleQuery'],
             );
         }
     }

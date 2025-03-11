@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use Matchory\ServerTiming\ServerTiming;
 
-if ( ! function_exists('measure_timing')) {
+if (! function_exists('measure_timing')) {
     function measure_timing(string $key, callable|null $callable = null): void
     {
         /** @var ServerTiming $timing */

@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace Matchory\ServerTiming;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider;
-use Matchory\ServerTiming\Subscribers\EloquentSubscriber;
-use Matchory\ServerTiming\Subscribers\OctaneSubscriber;
+use Matchory\ServerTiming\Subscribers\{EloquentSubscriber, OctaneSubscriber};
 use Symfony\Component\Stopwatch\Stopwatch;
 
 use function implode;
@@ -47,7 +46,7 @@ class ServerTimingServiceProvider extends EventServiceProvider
 
         $this->app->singleton(
             ServerTiming::class,
-            fn() => new ServerTiming(new Stopwatch())
+            fn() => new ServerTiming(new Stopwatch()),
         );
     }
 

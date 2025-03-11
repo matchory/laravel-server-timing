@@ -7,6 +7,7 @@ namespace Matchory\ServerTiming;
 use Symfony\Component\Stopwatch\Stopwatch;
 
 use function defined;
+use function floatval;
 use function microtime;
 
 // @phpstan-ignore-next-line
@@ -55,7 +56,7 @@ class ServerTiming
 
     public function setDuration(
         string $key,
-        callable|float|null $duration
+        callable|float|null $duration,
     ): static {
         if (is_callable($duration)) {
             $this->start($key);
@@ -90,7 +91,7 @@ class ServerTiming
 
     public function measure(string $key): static
     {
-        if ( ! $this->hasStartedEvent($key)) {
+        if (! $this->hasStartedEvent($key)) {
             return $this->start($key);
         }
 
@@ -119,7 +120,7 @@ class ServerTiming
         if ($this->stopwatch->isStarted($key)) {
             $event = $this->stopwatch->stop($key);
 
-            $this->setDuration($key, (float)$event->getDuration());
+            $this->setDuration($key, (float) $event->getDuration());
 
             unset($this->startedEvents[$key]);
         }
@@ -147,9 +148,9 @@ class ServerTiming
         }
 
         if (defined('LARAVEL_START')) {
-            return (int)LARAVEL_START;
+            return (int) LARAVEL_START;
         }
 
-        return $_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true);
+        return floatval($_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true));
     }
 }
