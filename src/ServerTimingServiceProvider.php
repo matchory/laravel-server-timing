@@ -61,4 +61,9 @@ class ServerTimingServiceProvider extends EventServiceProvider
             ]) => config_path('timing.php'),
         ], 'server-timing-config');
     }
+
+    protected function configureEmailVerification(): void
+    {
+        // Intentionally left blank to avoid duplicate registration
+    }
 }
