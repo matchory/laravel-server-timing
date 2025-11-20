@@ -7,7 +7,6 @@ namespace Matchory\ServerTiming;
 use Symfony\Component\Stopwatch\Stopwatch;
 
 use function defined;
-use function floatval;
 use function microtime;
 
 // @phpstan-ignore-next-line
@@ -39,7 +38,7 @@ class ServerTiming
      *
      * @return float|null
      */
-    public function getDuration(string $key): float|null
+    public function getDuration(string $key): ?float
     {
         return $this->finishedEvents[$key] ?? null;
     }
@@ -91,7 +90,7 @@ class ServerTiming
 
     public function measure(string $key): static
     {
-        if (! $this->hasStartedEvent($key)) {
+        if (!$this->hasStartedEvent($key)) {
             return $this->start($key);
         }
 
@@ -139,7 +138,6 @@ class ServerTiming
      * Retrieves the start timestamp of the current request.
      *
      * @return float|int
-     * @noinspection UnnecessaryCastingInspection
      */
     private function resolveRequestStartTime(): float|int
     {
@@ -151,6 +149,7 @@ class ServerTiming
             return (int) LARAVEL_START;
         }
 
-        return floatval($_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true));
+        /** @noinspection UnnecessaryCastingInspection */
+        return (float) ($_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true));
     }
 }

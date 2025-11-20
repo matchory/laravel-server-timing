@@ -47,6 +47,11 @@ class ServerTimingMiddleware
         return $response;
     }
 
+    protected function getElapsedTime(): float
+    {
+        return (microtime(true) - $this->timing->getStart()) * 1000;
+    }
+
     protected function generateHeaders(): string
     {
         $header = '';
@@ -58,7 +63,7 @@ class ServerTimingMiddleware
                 $eventName,
             );
 
-            if (! is_null($duration)) {
+            if (!is_null($duration)) {
                 $header .= "dur={$duration}";
             }
 
@@ -66,10 +71,5 @@ class ServerTimingMiddleware
         }
 
         return $header;
-    }
-
-    protected function getElapsedTime(): float
-    {
-        return (microtime(true) - $this->timing->getStart()) * 1000;
     }
 }

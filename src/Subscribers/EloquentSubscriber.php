@@ -33,7 +33,7 @@ readonly class EloquentSubscriber
 
     public function subscribe(Dispatcher $events): void
     {
-        if (! config('timing.enabled', true)) {
+        if (!config('timing.enabled', true)) {
             return;
         }
 
@@ -45,8 +45,8 @@ readonly class EloquentSubscriber
         }
 
         if (
-            config('timing.measure_queries', false) &&
-            config('app.env', 'production') !== 'production'
+            config('timing.measure_queries', false)
+            && config('app.env', 'production') !== 'production'
         ) {
             $events->listen(
                 QueryExecuted::class,
