@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Matchory\ServerTiming;
 
-use Illuminate\Foundation\Support\Providers\EventServiceProvider;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\ServiceProvider;
 use Matchory\ServerTiming\Subscribers\{EloquentSubscriber, OctaneSubscriber};
 use Symfony\Component\Stopwatch\Stopwatch;
 
@@ -13,41 +14,23 @@ use function implode;
 use const DIRECTORY_SEPARATOR as DS;
 
 /**
- * ServerTimingServiceProvider
+ * Server Timing Service Provider
  *
  * @bundle Matchory\ServerTiming
  */
-class ServerTimingServiceProvider extends EventServiceProvider
+class ServerTimingServiceProvider extends ServiceProvider
 {
-    /**
-     * @var string[]
-     */
-    protected $subscribe = [
-        OctaneSubscriber::class,
-        EloquentSubscriber::class,
-    ];
-
     /**
      * Bootstrap the application services.
      */
     public function boot(): void
     {
+        Event::subscribe(OctaneSubscriber::class);
+        Event::subscribe(EloquentSubscriber::class);
+
         if ($this->app->runningInConsole()) {
             $this->registerPublishing();
         }
-    }
-
-    /**
-     * Register the application services.
-     */
-    public function register(): void
-    {
-        parent::register();
-
-        $this->app->singleton(
-            ServerTiming::class,
-            fn() => new ServerTiming(new Stopwatch()),
-        );
     }
 
     private function registerPublishing(): void
@@ -62,8 +45,16 @@ class ServerTimingServiceProvider extends EventServiceProvider
         ], 'server-timing-config');
     }
 
-    protected function configureEmailVerification(): void
+    /**
+     * Register the application services.
+     */
+    public function register(): void
     {
-        // Intentionally left blank to avoid duplicate registration
+        parent::register();
+
+        $this->app->singleton(
+            ServerTiming::class,
+            fn() => new ServerTiming(new Stopwatch()),
+        );
     }
 }
