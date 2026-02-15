@@ -37,7 +37,7 @@ readonly class EloquentSubscriber
             return;
         }
 
-        if (config('timing.measure_database', true)) {
+        if (config('timing.measure_database', false)) {
             $events->listen(
                 QueryExecuted::class,
                 [self::class, 'handleTotal'],
