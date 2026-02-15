@@ -46,9 +46,9 @@ class ServerTiming
     /**
      * Retrieves the current starting time.
      *
-     * @return float|int
+     * @return float
      */
-    public function getStart(): float|int
+    public function getStart(): float
     {
         return $this->start;
     }
@@ -137,16 +137,16 @@ class ServerTiming
     /**
      * Retrieves the start timestamp of the current request.
      *
-     * @return float|int
+     * @return float
      */
-    private function resolveRequestStartTime(): float|int
+    private function resolveRequestStartTime(): float
     {
         if (isset($_SERVER['LARAVEL_OCTANE'])) {
             return microtime(true);
         }
 
         if (defined('LARAVEL_START')) {
-            return (int) LARAVEL_START;
+            return (float) LARAVEL_START;
         }
 
         /** @noinspection UnnecessaryCastingInspection */
