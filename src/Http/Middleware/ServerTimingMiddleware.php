@@ -59,18 +59,18 @@ class ServerTimingMiddleware
 
         foreach ($this->timing->events() as $eventName => $duration) {
             $header .= sprintf(
-                '%s;desc="%s";',
+                '%s;desc="%s"',
                 Str::slug($eventName),
                 $eventName,
             );
 
             if (!is_null($duration)) {
-                $header .= "dur={$duration}";
+                $header .= ";dur={$duration}";
             }
 
             $header .= ", ";
         }
 
-        return preg_replace('/\s+/', ' ', $header);
+        return (string) preg_replace('/\s+/', ' ', $header);
     }
 }

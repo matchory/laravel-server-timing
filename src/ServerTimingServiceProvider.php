@@ -52,6 +52,16 @@ class ServerTimingServiceProvider extends ServiceProvider
     {
         parent::register();
 
+        $this->mergeConfigFrom(
+            implode(DS, [
+                __DIR__,
+                'Resources',
+                'config',
+                'config.php',
+            ]),
+            'timing',
+        );
+
         $this->app->singleton(
             ServerTiming::class,
             fn() => new ServerTiming(new Stopwatch()),
