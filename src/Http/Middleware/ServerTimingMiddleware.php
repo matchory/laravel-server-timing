@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 use function array_sum;
 use function microtime;
+use function preg_replace;
 
 class ServerTimingMiddleware
 {
@@ -70,6 +71,6 @@ class ServerTimingMiddleware
             $header .= ", ";
         }
 
-        return $header;
+        return preg_replace('/\s+/', ' ', $header);
     }
 }
