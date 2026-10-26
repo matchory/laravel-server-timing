@@ -13,7 +13,9 @@ use Symfony\Component\HttpFoundation\Response;
 use function addcslashes;
 use function implode;
 use function microtime;
+use function number_format;
 use function preg_replace;
+use function rtrim;
 
 final class ServerTimingMiddleware
 {
@@ -67,12 +69,21 @@ final class ServerTimingMiddleware
             );
 
             if (!is_null($duration)) {
-                $metric .= ";dur={$duration}";
+                $metric .= ';dur=' . $this->formatDuration($duration);
             }
 
             $metrics[] = $metric;
         }
 
         return (string) preg_replace('/\s+/', ' ', implode(', ', $metrics));
+    }
+
+    /**
+     * Formats a duration with at most three decimals and without exponent
+     * notation, trimming trailing zeros.
+     */
+    private function formatDuration(float $duration): string
+    {
+        return rtrim(rtrim(number_format($duration, 3, '.', ''), '0'), '.');
     }
 }

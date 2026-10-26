@@ -2,6 +2,7 @@
 
 namespace Matchory\ServerTiming\Tests\Middleware;
 
+use Closure;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 use Matchory\ServerTiming\Http\Middleware\ServerTimingMiddleware;
@@ -122,5 +123,39 @@ class ServerTimingMiddlewareTest extends TestCase
             'db;desc="Database (3 queries)";dur=1',
             (string) $response->headers->get('Server-Timing'),
         );
+    }
+
+    #[Test]
+    public function it_rounds_durations_to_three_decimals_without_exponents(): void
+    {
+        $header = $this->headerFor(function (ServerTiming $timing): void {
+            $timing->setDuration('a', 1.0);
+            $timing->setDuration('b', 12.5);
+            $timing->setDuration('c', 0.001);
+            $timing->setDuration('d', 352.4621234);
+            $timing->setDuration('e', 0.0000001);
+        });
+
+        $this->assertStringContainsString('a;desc="a";dur=1,', $header);
+        $this->assertStringContainsString('b;desc="b";dur=12.5,', $header);
+        $this->assertStringContainsString('c;desc="c";dur=0.001,', $header);
+        $this->assertStringContainsString('d;desc="d";dur=352.462,', $header);
+        $this->assertStringContainsString('e;desc="e";dur=0,', $header);
+    }
+
+    /**
+     * @param Closure(ServerTiming): void $measure
+     */
+    private function headerFor(Closure $measure): string
+    {
+        $timing = new ServerTiming(new Stopwatch());
+        $middleware = new ServerTimingMiddleware($timing);
+        $response = $middleware->handle(new Request(), function () use ($timing, $measure) {
+            $measure($timing);
+
+            return new Response();
+        });
+
+        return (string) $response->headers->get('Server-Timing');
     }
 }
