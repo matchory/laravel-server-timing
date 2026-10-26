@@ -27,4 +27,23 @@ class ServerTimingServiceProviderTest extends TestCase
         $this->assertSame($contract, $this->app?->make(ServerTiming::class));
         $this->assertSame($contract, ServerTimingFacade::getFacadeRoot());
     }
+
+    #[Test]
+    public function it_measures_with_sub_millisecond_precision(): void
+    {
+        $timing = $this->app?->make(ServerTimingContract::class);
+        $durations = [];
+
+        // Any single duration may happen to be a whole number of milliseconds,
+        // but with sub-millisecond precision, not all five will.
+        for ($i = 0; $i < 5; $i++) {
+            $timing?->time("event {$i}", fn() => usleep(1_500));
+            $durations[] = $timing?->getDuration("event {$i}");
+        }
+
+        $this->assertNotEmpty(array_filter(
+            $durations,
+            fn(?float $duration) => $duration !== null && floor($duration) !== $duration,
+        ));
+    }
 }

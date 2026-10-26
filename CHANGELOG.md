@@ -26,6 +26,7 @@ All notable changes to `laravel-server-timing` are documented in this file. The 
 - The default database connection is reported as `Database` instead of `Database (name)`.
 - `measure_queries` sums repeated queries into one metric with an `(xN)` count.
 - Metric names are unique (`-2`, `-3`, ...) and never empty; durations are rounded to three decimals.
+- Measured events have 0.1 ms precision instead of whole milliseconds.
 
 ### Fixed
 

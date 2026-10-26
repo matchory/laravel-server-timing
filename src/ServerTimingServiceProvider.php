@@ -68,7 +68,7 @@ final class ServerTimingServiceProvider extends ServiceProvider
 
         $this->app->singleton(
             ServerTiming::class,
-            fn() => new ServerTiming(new Stopwatch()),
+            fn() => new ServerTiming(new Stopwatch(morePrecision: true)),
         );
         $this->app->alias(ServerTiming::class, ServerTimingContract::class);
     }
