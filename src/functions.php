@@ -5,17 +5,27 @@ declare(strict_types=1);
 use Matchory\ServerTiming\Contracts\ServerTiming;
 
 if (!function_exists('measure_timing')) {
-    function measure_timing(string $key, ?callable $callable = null): void
+    /**
+     * Measures the duration of a callable and returns its result, or toggles
+     * the event if no callable is given.
+     *
+     * @template T
+     *
+     * @param (callable(): T)|null $callable
+     *
+     * @return ($callable is null ? null : T)
+     */
+    function measure_timing(string $key, ?callable $callable = null): mixed
     {
         /** @var ServerTiming $timing */
         $timing = app(ServerTiming::class);
 
-        if (is_callable($callable)) {
-            $timing->setDuration($key, $callable);
+        if ($callable === null) {
+            $timing->measure($key);
 
-            return;
+            return null;
         }
 
-        $timing->measure($key);
+        return $timing->time($key, $callable);
     }
 }

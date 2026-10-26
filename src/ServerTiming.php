@@ -55,18 +55,30 @@ final class ServerTiming implements ServerTimingContract
     public function setDuration(string $key, callable|float $duration): static
     {
         if (is_callable($duration)) {
-            $this->start($key);
-
-            try {
-                $duration();
-            } finally {
-                $this->stop($key);
-            }
+            $this->time($key, $duration);
         } else {
             $this->finishedEvents[$key] = $duration;
         }
 
         return $this;
+    }
+
+    /**
+     * @template T
+     *
+     * @param callable(): T $callback
+     *
+     * @return T
+     */
+    public function time(string $key, callable $callback): mixed
+    {
+        $this->start($key);
+
+        try {
+            return $callback();
+        } finally {
+            $this->stop($key);
+        }
     }
 
     public function addMetric(string $metric): static

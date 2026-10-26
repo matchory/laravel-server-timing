@@ -23,6 +23,18 @@ interface ServerTiming
     public function setDuration(string $key, callable|float $duration): static;
 
     /**
+     * Measures the duration of a callable and returns its result. The event
+     * is stopped even if the callable throws.
+     *
+     * @template T
+     *
+     * @param callable(): T $callback
+     *
+     * @return T
+     */
+    public function time(string $key, callable $callback): mixed;
+
+    /**
      * Adds a metric without a duration.
      */
     public function addMetric(string $metric): static;

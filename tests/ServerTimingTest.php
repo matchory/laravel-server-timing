@@ -200,6 +200,32 @@ class ServerTimingTest extends TestCase
     }
 
     #[Test]
+    public function it_returns_the_result_of_timed_callables(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+
+        $this->assertSame(42, $timing->time('callable', fn() => 42));
+        $this->assertFalse($timing->hasStartedEvent('callable'));
+        $this->assertNotNull($timing->getDuration('callable'));
+    }
+
+    #[Test]
+    public function it_stops_timed_callables_that_throw(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+
+        try {
+            $timing->time('callable', function () {
+                throw new RuntimeException('failed');
+            });
+        } catch (RuntimeException) {
+        }
+
+        $this->assertFalse($timing->hasStartedEvent('callable'));
+        $this->assertNotNull($timing->getDuration('callable'));
+    }
+
+    #[Test]
     public function it_does_not_accept_null_durations(): void
     {
         $timing = new ServerTiming(new Stopwatch());
