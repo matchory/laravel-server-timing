@@ -37,7 +37,7 @@ final class HttpClientSubscriber
 
     public function __construct(private readonly ServerTiming $timing)
     {
-        $this->pending = new WeakMap();
+        $this->flush();
     }
 
     public function flush(): void
