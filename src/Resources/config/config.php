@@ -35,4 +35,14 @@ return [
      | executed by the database, and add the timing as separate values
      */
     'measure_queries' => env('SERVER_TIMING_MEASURE_QUERIES', false),
+
+    /*
+     |--------------------------------------------------------------------------
+     | Measure cache usage
+     |--------------------------------------------------------------------------
+     |
+     | This setting, if enabled, will count cache hits and misses, and measure
+     | the total time spent retrieving them from the cache store.
+     */
+    'measure_cache' => env('SERVER_TIMING_MEASURE_CACHE', false),
 ];
