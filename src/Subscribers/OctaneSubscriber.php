@@ -6,9 +6,9 @@ namespace Matchory\ServerTiming\Subscribers;
 
 use Illuminate\Contracts\Events\Dispatcher;
 use Laravel\Octane\Events\{RequestReceived, WorkerStarting};
-use Matchory\ServerTiming\ServerTiming;
+use Matchory\ServerTiming\Contracts\ServerTiming;
 
-readonly class OctaneSubscriber
+final readonly class OctaneSubscriber
 {
     public function __construct(private ServerTiming $timing) {}
 

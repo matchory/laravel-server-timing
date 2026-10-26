@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use Matchory\ServerTiming\ServerTiming;
+use Matchory\ServerTiming\Contracts\ServerTiming;
 
 if (!function_exists('measure_timing')) {
     function measure_timing(string $key, ?callable $callable = null): void

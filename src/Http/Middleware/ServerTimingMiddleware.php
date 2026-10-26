@@ -7,7 +7,7 @@ namespace Matchory\ServerTiming\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Matchory\ServerTiming\ServerTiming;
+use Matchory\ServerTiming\Contracts\ServerTiming;
 use Symfony\Component\HttpFoundation\Response;
 
 use function addcslashes;
@@ -15,7 +15,7 @@ use function implode;
 use function microtime;
 use function preg_replace;
 
-class ServerTimingMiddleware
+final class ServerTimingMiddleware
 {
     private const string HEADER = 'Server-Timing';
 
@@ -50,12 +50,12 @@ class ServerTimingMiddleware
         return $response;
     }
 
-    protected function getElapsedTime(): float
+    private function getElapsedTime(): float
     {
         return (microtime(true) - $this->timing->getStart()) * 1000;
     }
 
-    protected function generateHeaders(): string
+    private function generateHeaders(): string
     {
         $metrics = [];
 

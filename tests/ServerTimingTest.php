@@ -9,6 +9,7 @@ use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Symfony\Component\Stopwatch\Stopwatch;
+use TypeError;
 
 class ServerTimingTest extends TestCase
 {
@@ -196,5 +197,16 @@ class ServerTimingTest extends TestCase
 
         $this->assertFalse($timing->hasStartedEvent('callable'));
         $this->assertNotNull($timing->getDuration('callable'));
+    }
+
+    #[Test]
+    public function it_does_not_accept_null_durations(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+
+        $this->expectException(TypeError::class);
+
+        // @phpstan-ignore argument.type
+        $timing->setDuration('key', null);
     }
 }
