@@ -78,9 +78,9 @@ class EloquentSubscriberTest extends TestCase
         $this->runQuery('select 1', 3.0);
 
         $timing = $this->timing();
-        $this->assertSame([self::SQL => 4.0, 'select 1' => 3.0], $timing->events());
-        $this->assertSame(self::SQL . ' (x3)', $timing->getDescription(self::SQL));
-        $this->assertSame('select 1', $timing->getDescription('select 1'));
+        $this->assertSame(['Query 1' => 4.0, 'Query 2' => 3.0], $timing->events());
+        $this->assertSame(self::SQL . ' (x3)', $timing->getDescription('Query 1'));
+        $this->assertSame('select 1', $timing->getDescription('Query 2'));
     }
 
     #[Test]
@@ -93,9 +93,9 @@ class EloquentSubscriberTest extends TestCase
         $this->runQuery('select 1', null);
 
         $timing = $this->timing();
-        $this->assertSame([self::SQL => null, 'select 1' => 2.0], $timing->events());
-        $this->assertSame(self::SQL, $timing->getDescription(self::SQL));
-        $this->assertSame('select 1 (x3)', $timing->getDescription('select 1'));
+        $this->assertSame(['Query 1' => null, 'Query 2' => 2.0], $timing->events());
+        $this->assertSame(self::SQL, $timing->getDescription('Query 1'));
+        $this->assertSame('select 1 (x3)', $timing->getDescription('Query 2'));
     }
 
     #[Test]
@@ -121,8 +121,8 @@ class EloquentSubscriberTest extends TestCase
 
         $timing = $this->timing();
         $this->assertSame([
-            'select 1' => 2.0,
-            'select 2' => 1.0,
+            'Query 1' => 2.0,
+            'Query 2' => 1.0,
             'Other queries' => 5.0,
         ], $timing->events());
         $this->assertSame('Other queries (x2)', $timing->getDescription('Other queries'));
@@ -140,8 +140,23 @@ class EloquentSubscriberTest extends TestCase
         $this->runQuery('select 2', 3.0);
 
         $timing = $this->timing();
-        $this->assertSame(['select 2' => 6.0], $timing->events());
-        $this->assertSame('select 2 (x2)', $timing->getDescription('select 2'));
+        $this->assertSame(['Query 1' => 6.0], $timing->events());
+        $this->assertSame('select 2 (x2)', $timing->getDescription('Query 1'));
+    }
+
+    #[Test]
+    #[WithConfig('timing.measure_queries', true, false)]
+    public function it_cuts_long_queries_short_in_the_description(): void
+    {
+        $sql = 'select * from users where id in (' . str_repeat('?, ', 100) . '?)';
+
+        $this->runQuery($sql, 1.0);
+        $this->runQuery($sql, 1.0);
+
+        $this->assertSame(
+            substr($sql, 0, 200) . '… (x2)',
+            $this->timing()->getDescription('Query 1'),
+        );
     }
 
     private function runQuery(string $sql, ?float $time, ?string $connection = null): void

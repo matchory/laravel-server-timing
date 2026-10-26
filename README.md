@@ -111,6 +111,12 @@ timing instance instead of the result.
 ServerTiming::setDuration('Running expensive task', 1_200);
 ```
 
+To sum up repeated work under one metric, add to its duration with `addDuration()`:
+
+```php
+ServerTiming::addDuration('Image processing', 35.2);
+```
+
 To add a metric without a duration, use `addMetric()`:
 
 ```php
@@ -136,8 +142,9 @@ There are two built-in options that you can enable via the configuration:
 
 - `measure_database`: Measures the total time spent in database queries, per connection. The default connection is reported as `Database`,
   other connections as `Database (name)`.
-- `measure_queries`: Measures the time spent in each query, as individual metrics. Repeated queries are summed into one metric, and their
-  description shows the count, like `select * from users where id = ? (x3)`. Beyond `max_queries` distinct queries (20 by default), the
+- `measure_queries`: Measures the time spent in each query, as individual metrics named `query-1`, `query-2` and so on. The description
+  holds the SQL, cut short after 200 characters. Repeated queries are summed into one metric, and their description shows the count, like
+  `select * from users where id = ? (x3)`. Beyond `max_queries` distinct queries (20 by default), the
   remaining ones are summed into a single `Other queries` metric. Queries are never measured individually if `app.env` is `production`, even if
   the request is authorized.
 
@@ -244,8 +251,9 @@ Version 2 contains the following breaking changes:
   the contract and bind it (see [Dependency injection](#dependency-injection)).
 - **`measure_timing()`:** returns the result of the callable, or `null` without one, instead of `void`.
 - **Database metric:** the default connection is reported as `Database` instead of `Database (mysql)`. Other connections keep their name.
-- **`measure_queries`:** repeated queries are summed into one metric with an `(xN)` count, and beyond `max_queries` distinct queries, the rest
-  go into `Other queries`. Before, a repeated query showed only its last execution.
+- **`measure_queries`:** queries are named `query-1`, `query-2` and so on, with the SQL as description, cut short after 200 characters.
+  Repeated queries are summed into one metric with an `(xN)` count, and beyond `max_queries` distinct queries, the rest go into
+  `Other queries`. Before, a repeated query showed only its last execution.
 - **Total:** Total is the elapsed time of the request, instead of the sum of all events. Nested events, like database time, are no longer
   counted twice.
 - **Metric names:** metrics whose keys slug to the same name are suffixed with `-2`, `-3`, and so on, instead of sharing a name. Durations are

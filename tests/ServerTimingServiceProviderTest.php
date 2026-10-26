@@ -10,6 +10,7 @@ use Matchory\ServerTiming\ServerTiming;
 use Matchory\ServerTiming\ServerTimingServiceProvider;
 use Orchestra\Testbench\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use Symfony\Component\Stopwatch\Stopwatch;
 
 class ServerTimingServiceProviderTest extends TestCase
 {
@@ -26,6 +27,18 @@ class ServerTimingServiceProviderTest extends TestCase
         $this->assertInstanceOf(ServerTiming::class, $contract);
         $this->assertSame($contract, $this->app?->make(ServerTiming::class));
         $this->assertSame($contract, ServerTimingFacade::getFacadeRoot());
+    }
+
+    #[Test]
+    public function it_keeps_a_contract_binding_made_before_it_registers(): void
+    {
+        $custom = new ServerTiming(new Stopwatch());
+        $this->app?->singleton(ServerTimingContract::class, fn() => $custom);
+
+        // Registering again stands in for a binding made before registration.
+        $this->app?->register(ServerTimingServiceProvider::class, force: true);
+
+        $this->assertSame($custom, $this->app?->make(ServerTimingContract::class));
     }
 
     #[Test]

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Matchory\ServerTiming;
 
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Matchory\ServerTiming\Contracts\ServerTiming as ServerTimingContract;
@@ -71,6 +72,12 @@ final class ServerTimingServiceProvider extends ServiceProvider
             ServerTiming::class,
             fn() => new ServerTiming(new Stopwatch(morePrecision: true)),
         );
-        $this->app->alias(ServerTiming::class, ServerTimingContract::class);
+
+        // Bound rather than aliased, so a binding of the contract made before
+        // this provider registers takes precedence.
+        $this->app->singletonIf(
+            ServerTimingContract::class,
+            fn(Application $app) => $app->make(ServerTiming::class),
+        );
     }
 }

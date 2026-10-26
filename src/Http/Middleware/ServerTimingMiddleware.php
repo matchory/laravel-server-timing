@@ -119,9 +119,13 @@ final class ServerTimingMiddleware
         $metrics = [];
 
         foreach ($this->timing->events() as $eventName => $duration) {
+            // PHP turns numeric string keys into integers.
+            $eventName = (string) $eventName;
+
             // Different keys may slug to the same (or an empty) name, but
             // browsers would merge or drop such metrics.
-            $base = Str::slug($eventName) ?: 'metric';
+            $base = Str::slug($eventName);
+            $base = $base === '' ? 'metric' : $base;
             $name = $base;
 
             for ($i = 2; isset($metrics[$name]); $i++) {

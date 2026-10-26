@@ -10,6 +10,7 @@ All notable changes to `laravel-server-timing` are documented in this file. The 
 - `Contracts\ServerTiming` contract, resolved by the middleware, subscribers, facade and `measure_timing()`.
 - `time()` measures a callable and returns its result.
 - `describe()` sets a description separate from the metric key.
+- `addDuration()` adds to the duration of an event, to sum up repeated work.
 - `ServerTimingMiddleware::authorize()` decides which requests receive the header; `flushState()` removes the callback.
 - `context` option, which adds the final timings to Laravel's Context, so later log entries include them.
 - `allow_origin` option, sent as the `Timing-Allow-Origin` header.
@@ -27,6 +28,7 @@ All notable changes to `laravel-server-timing` are documented in this file. The 
 - `setDuration()` no longer accepts `null`; use `addMetric()`.
 - The default database connection is reported as `Database` instead of `Database (name)`.
 - `measure_queries` sums repeated queries into one metric with an `(xN)` count.
+- Queries are named `query-1`, `query-2`, ...; the SQL is the description, cut short after 200 characters.
 - Metric names are unique (`-2`, `-3`, ...) and never empty; durations are rounded to three decimals.
 - Measured events have 0.1 ms precision instead of whole milliseconds.
 
@@ -37,6 +39,7 @@ All notable changes to `laravel-server-timing` are documented in this file. The 
 - The header no longer ends with a trailing separator.
 - Events are stopped even if the measured callable throws.
 - Any falsy `enabled` value disables the middleware, not only `false`.
+- A binding of the contract made before the package registers is no longer overridden.
 
 ### Removed
 

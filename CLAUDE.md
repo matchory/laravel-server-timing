@@ -26,11 +26,11 @@ All classes are `final`.
 
 **`Contracts\ServerTiming`** — The public API. Everything (middleware, subscribers, facade, helper) resolves the contract, never the concrete class.
 
-**`ServerTiming`** — Default implementation, registered as a singleton with the contract aliased to it. Wraps Symfony Stopwatch to track named timing events. All durations in milliseconds. `describe()` stores a description separate from the key.
+**`ServerTiming`** — Default implementation, registered as a singleton; the contract resolves to it via `singletonIf`, so an earlier binding of the contract wins. Wraps Symfony Stopwatch to track named timing events. All durations in milliseconds; `addDuration()` sums into an event. `describe()` stores a description separate from the key.
 
 **`ServerTimingMiddleware`** — Measures Bootstrap/App/Total (Total is elapsed request time), stops all unfinished events, and sets the `Server-Timing` header (slugged, de-duplicated names; escaped descriptions; durations rounded to 3 decimals) plus `Timing-Allow-Origin` if `allow_origin` is set. The header is sent outside production only, unless the static `authorize()` callback (run after the app handled the request) says otherwise; `flushState()` clears it. With `context` enabled, it adds the final timings to Laravel's Context as `server_timing` before the authorization check.
 
-**`EloquentSubscriber`** — Listens to `QueryExecuted`. Aggregate DB time per connection (`measure_database`; default connection is `Database`, others `Database (name)`) and per-query metrics in non-production (`measure_queries`; repeats summed with `(xN)`, beyond `max_queries` into `Other queries`).
+**`EloquentSubscriber`** — Listens to `QueryExecuted`. Aggregate DB time per connection (`measure_database`; default connection is `Database`, others `Database (name)`) and per-query metrics in non-production (`measure_queries`; numbered `Query N` keys with the SQL, cut to 200 chars, as description; repeats summed with `(xN)`, beyond `max_queries` into `Other queries`).
 
 **`CacheSubscriber`** (`measure_cache`), **`HttpClientSubscriber`** (`measure_http`), **`QueueSubscriber`** (`measure_queue`), **`LivewireSubscriber`** (`measure_livewire`) — Opt-in collectors for cache hits/misses and retrieval time, summed HTTP client request time, the count of queued jobs, and Livewire render/call time per component (via `Livewire::listen()` finishers; no-op without Livewire, which is only suggested).
 

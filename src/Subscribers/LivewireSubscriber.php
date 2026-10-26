@@ -65,10 +65,7 @@ final class LivewireSubscriber
         return function () use ($key, $start): void {
             $count = $this->counts[$key] = ($this->counts[$key] ?? 0) + 1;
 
-            $this->timing->setDuration(
-                $key,
-                ($this->timing->getDuration($key) ?? 0.0) + (hrtime(true) - $start) / 1e6,
-            );
+            $this->timing->addDuration($key, (hrtime(true) - $start) / 1e6);
 
             if ($count > 1) {
                 $this->timing->describe($key, "{$key} (x{$count})");

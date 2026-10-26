@@ -23,6 +23,11 @@ interface ServerTiming
     public function setDuration(string $key, callable|float $duration): static;
 
     /**
+     * Adds milliseconds to the duration of an event, starting from zero.
+     */
+    public function addDuration(string $key, float $duration): static;
+
+    /**
      * Measures the duration of a callable and returns its result. The event
      * is stopped even if the callable throws.
      *

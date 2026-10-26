@@ -6,6 +6,7 @@ namespace Matchory\ServerTiming\Subscribers;
 
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Support\Str;
 use Laravel\Octane\Events\RequestReceived;
 use Matchory\ServerTiming\Contracts\ServerTiming;
 
@@ -16,6 +17,15 @@ final class EloquentSubscriber
 {
     private const string OTHER_QUERIES = 'Other queries';
 
+    private const int MAX_SQL_LENGTH = 200;
+
+    /**
+     * Metric key per distinct query in the current request.
+     *
+     * @var array<string, string>
+     */
+    private array $keys = [];
+
     /**
      * Number of executions per query metric in the current request.
      *
@@ -23,36 +33,43 @@ final class EloquentSubscriber
      */
     private array $counts = [];
 
+    private int $maxQueries = 20;
+
     public function __construct(private readonly ServerTiming $timing) {}
 
     public function handleQuery(QueryExecuted $event): void
     {
-        $key = $event->sql;
-        $distinct = count($this->counts) - (int) isset($this->counts[self::OTHER_QUERIES]);
+        $key = $this->keys[$event->sql] ?? null;
 
-        if (!isset($this->counts[$key]) && $distinct >= (int) config('timing.max_queries', 20)) {
-            $key = self::OTHER_QUERIES;
+        if ($key === null && count($this->keys) < $this->maxQueries) {
+            $key = 'Query ' . (count($this->keys) + 1);
+            $this->keys[$event->sql] = $key;
         }
 
+        $key ??= self::OTHER_QUERIES;
         $count = $this->counts[$key] = ($this->counts[$key] ?? 0) + 1;
-        $previous = $this->timing->getDuration($key);
 
-        if ($event->time === null && $previous === null) {
+        if ($event->time === null && $this->timing->getDuration($key) === null) {
             $this->timing->addMetric($key);
         } else {
-            $this->timing->setDuration($key, ($previous ?? 0.0) + ($event->time ?? 0.0));
+            $this->timing->addDuration($key, $event->time ?? 0.0);
         }
 
-        if ($count > 1) {
-            $this->timing->describe($key, "{$key} (x{$count})");
-        }
+        // The SQL is only sent as the description, cut short to keep the
+        // header within web server limits.
+        $description = $key === self::OTHER_QUERIES
+            ? $key
+            : Str::limit($event->sql, self::MAX_SQL_LENGTH, '…');
+
+        $this->timing->describe($key, $count > 1 ? "{$description} (x{$count})" : $description);
     }
 
     /**
-     * Clears the per-request counts; this instance outlives Octane requests.
+     * Clears the per-request state; this instance outlives Octane requests.
      */
     public function flush(): void
     {
+        $this->keys = [];
         $this->counts = [];
     }
 
@@ -64,8 +81,7 @@ final class EloquentSubscriber
             $key .= " ({$event->connectionName})";
         }
 
-        $previous = $this->timing->getDuration($key) ?? 0.0;
-        $this->timing->setDuration($key, $previous + $event->time);
+        $this->timing->addDuration($key, $event->time ?? 0.0);
     }
 
     public function subscribe(Dispatcher $events): void
@@ -77,7 +93,7 @@ final class EloquentSubscriber
         if (config('timing.measure_database', false)) {
             $events->listen(
                 QueryExecuted::class,
-                [self::class, 'handleTotal'],
+                [$this, 'handleTotal'],
             );
         }
 
@@ -85,6 +101,8 @@ final class EloquentSubscriber
             config('timing.measure_queries', false)
             && config('app.env', 'production') !== 'production'
         ) {
+            $this->maxQueries = (int) config('timing.max_queries', 20);
+
             // Bound to this instance, as the per-request counts live here.
             $events->listen(
                 QueryExecuted::class,

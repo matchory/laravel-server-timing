@@ -245,6 +245,20 @@ class ServerTimingMiddlewareTest extends TestCase
     }
 
     #[Test]
+    public function it_handles_numeric_keys(): void
+    {
+        $header = $this->headerFor(function (ServerTiming $timing): void {
+            $timing->setDuration('123', 1.0);
+            $timing->setDuration('0', 2.0);
+            $timing->start('456');
+        });
+
+        $this->assertStringContainsString(', 123;desc="123";dur=1,', $header);
+        $this->assertStringContainsString(', 0;desc="0";dur=2,', $header);
+        $this->assertStringContainsString(', 456;desc="456";dur=', $header);
+    }
+
+    #[Test]
     public function it_makes_metric_names_unique(): void
     {
         $header = $this->headerFor(function (ServerTiming $timing): void {

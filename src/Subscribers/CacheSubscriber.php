@@ -70,7 +70,7 @@ final class CacheSubscriber
 
     private function record(bool $hit): void
     {
-        $duration = $this->timing->getDuration(self::KEY) ?? 0.0;
+        $duration = 0.0;
 
         $hit ? $this->hits++ : $this->misses++;
 
@@ -82,7 +82,7 @@ final class CacheSubscriber
         }
 
         $this->timing
-            ->setDuration(self::KEY, $duration)
+            ->addDuration(self::KEY, $duration)
             ->describe(self::KEY, sprintf(
                 'Cache (%d %s, %d %s)',
                 $this->hits,

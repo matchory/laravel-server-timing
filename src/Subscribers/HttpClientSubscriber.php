@@ -52,7 +52,7 @@ final class HttpClientSubscriber
         $this->pending[$event->request] = hrtime(true);
 
         $this->timing
-            ->setDuration(self::KEY, $this->timing->getDuration(self::KEY) ?? 0.0)
+            ->addDuration(self::KEY, 0.0)
             ->describe(self::KEY, sprintf(
                 'HTTP client (%d %s)',
                 $this->count,
@@ -104,9 +104,6 @@ final class HttpClientSubscriber
         $elapsed = (hrtime(true) - $this->pending[$request]) / 1e6;
         unset($this->pending[$request]);
 
-        $this->timing->setDuration(
-            self::KEY,
-            ($this->timing->getDuration(self::KEY) ?? 0.0) + $elapsed,
-        );
+        $this->timing->addDuration(self::KEY, $elapsed);
     }
 }

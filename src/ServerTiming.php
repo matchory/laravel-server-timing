@@ -68,6 +68,13 @@ final class ServerTiming implements ServerTimingContract
         return $this;
     }
 
+    public function addDuration(string $key, float $duration): static
+    {
+        $this->finishedEvents[$key] = ($this->finishedEvents[$key] ?? 0.0) + $duration;
+
+        return $this;
+    }
+
     public function time(string $key, callable $callback): mixed
     {
         $this->start($key);
@@ -153,8 +160,9 @@ final class ServerTiming implements ServerTimingContract
 
     public function stopAllUnfinishedEvents(): void
     {
+        // PHP turns numeric string keys into integers.
         foreach (array_keys($this->startedEvents) as $startedEventName) {
-            $this->stop($startedEventName);
+            $this->stop((string) $startedEventName);
         }
     }
 

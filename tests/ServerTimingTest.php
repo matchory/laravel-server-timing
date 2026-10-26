@@ -57,6 +57,22 @@ class ServerTimingTest extends TestCase
      * @throws ExpectationFailedException
      */
     #[Test]
+    public function it_can_add_to_durations(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+        $timing->addDuration('key', 1.5);
+        $timing->addDuration('key', 2.25);
+        $timing->addMetric('metric');
+        $timing->addDuration('metric', 1.0);
+
+        $this->assertSame(['key' => 3.75, 'metric' => 1.0], $timing->events());
+    }
+
+    /**
+     * @throws Exception
+     * @throws ExpectationFailedException
+     */
+    #[Test]
     public function it_can_set_durations_with_callables(): void
     {
         $timing = new ServerTiming(new Stopwatch());
