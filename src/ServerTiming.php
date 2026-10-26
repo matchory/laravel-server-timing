@@ -63,13 +63,6 @@ final class ServerTiming implements ServerTimingContract
         return $this;
     }
 
-    /**
-     * @template T
-     *
-     * @param callable(): T $callback
-     *
-     * @return T
-     */
     public function time(string $key, callable $callback): mixed
     {
         $this->start($key);

@@ -17,7 +17,6 @@ if (!function_exists('measure_timing')) {
      */
     function measure_timing(string $key, ?callable $callable = null): mixed
     {
-        /** @var ServerTiming $timing */
         $timing = app(ServerTiming::class);
 
         if ($callable === null) {
