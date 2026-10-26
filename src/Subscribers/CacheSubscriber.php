@@ -7,6 +7,7 @@ namespace Matchory\ServerTiming\Subscribers;
 use Illuminate\Cache\Events\{CacheHit, CacheMissed, RetrievingKey, RetrievingManyKeys};
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Str;
+use Laravel\Octane\Events\RequestReceived;
 use Matchory\ServerTiming\Contracts\ServerTiming;
 
 use function config;
@@ -15,9 +16,8 @@ use function hrtime;
 /**
  * Counts cache hits and misses, and measures the time spent retrieving them.
  *
- * The subscriber lives for the worker lifetime, but the counters belong to
- * the current request: if the metric is missing, ServerTiming was reset, and
- * counting starts over.
+ * The subscriber lives for the worker lifetime, so its counters are flushed
+ * on every Octane request.
  */
 final class CacheSubscriber
 {
@@ -30,6 +30,13 @@ final class CacheSubscriber
     private ?int $retrievalStart = null;
 
     public function __construct(private readonly ServerTiming $timing) {}
+
+    public function flush(): void
+    {
+        $this->hits = 0;
+        $this->misses = 0;
+        $this->retrievalStart = null;
+    }
 
     public function handleRetrieving(): void
     {
@@ -58,28 +65,24 @@ final class CacheSubscriber
         );
         $events->listen(CacheHit::class, [$this, 'handleHit']);
         $events->listen(CacheMissed::class, [$this, 'handleMiss']);
+        $events->listen(RequestReceived::class, [$this, 'flush']);
     }
 
     private function record(bool $hit): void
     {
-        $duration = $this->timing->getDuration(self::KEY);
-
-        if ($duration === null) {
-            $this->hits = 0;
-            $this->misses = 0;
-        }
+        $duration = $this->timing->getDuration(self::KEY) ?? 0.0;
 
         $hit ? $this->hits++ : $this->misses++;
 
         // Multi-key retrievals emit one event per key after a single store
         // call, so only the first event of a retrieval accounts for its time.
         if ($this->retrievalStart !== null) {
-            $duration = ($duration ?? 0.0) + (hrtime(true) - $this->retrievalStart) / 1e6;
+            $duration += (hrtime(true) - $this->retrievalStart) / 1e6;
             $this->retrievalStart = null;
         }
 
         $this->timing
-            ->setDuration(self::KEY, $duration ?? 0.0)
+            ->setDuration(self::KEY, $duration)
             ->describe(self::KEY, sprintf(
                 'Cache (%d %s, %d %s)',
                 $this->hits,
