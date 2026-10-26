@@ -60,6 +60,36 @@ class EloquentSubscriberTest extends TestCase
     }
 
     #[Test]
+    #[WithConfig('timing.measure_queries', true, false)]
+    public function it_aggregates_repeated_queries(): void
+    {
+        $this->runQuery(self::SQL, 1.0);
+        $this->runQuery(self::SQL, 2.5);
+        $this->runQuery(self::SQL, 0.5);
+        $this->runQuery('select 1', 3.0);
+
+        $timing = $this->timing();
+        $this->assertSame([self::SQL => 4.0, 'select 1' => 3.0], $timing->events());
+        $this->assertSame(self::SQL . ' (×3)', $timing->getDescription(self::SQL));
+        $this->assertSame('select 1', $timing->getDescription('select 1'));
+    }
+
+    #[Test]
+    #[WithConfig('timing.measure_queries', true, false)]
+    public function it_counts_queries_without_a_time(): void
+    {
+        $this->runQuery(self::SQL, null);
+        $this->runQuery('select 1', null);
+        $this->runQuery('select 1', 2.0);
+        $this->runQuery('select 1', null);
+
+        $timing = $this->timing();
+        $this->assertSame([self::SQL => null, 'select 1' => 2.0], $timing->events());
+        $this->assertSame(self::SQL, $timing->getDescription(self::SQL));
+        $this->assertSame('select 1 (×3)', $timing->getDescription('select 1'));
+    }
+
+    #[Test]
     #[WithConfig('app.env', 'production')]
     #[WithConfig('timing.measure_queries', true, false)]
     public function it_does_not_measure_queries_in_production(): void
@@ -67,6 +97,42 @@ class EloquentSubscriberTest extends TestCase
         $this->runQuery(self::SQL, 1.0);
 
         $this->assertSame([], $this->timing()->events());
+    }
+
+    #[Test]
+    #[WithConfig('timing.measure_queries', true, false)]
+    #[WithConfig('timing.max_queries', 2, false)]
+    public function it_aggregates_queries_beyond_the_cap(): void
+    {
+        $this->runQuery('select 1', 1.0);
+        $this->runQuery('select 2', 1.0);
+        $this->runQuery('select 3', 2.0);
+        $this->runQuery('select 1', 1.0);
+        $this->runQuery('select 4', 3.0);
+
+        $timing = $this->timing();
+        $this->assertSame([
+            'select 1' => 2.0,
+            'select 2' => 1.0,
+            'Other queries' => 5.0,
+        ], $timing->events());
+        $this->assertSame('Other queries (×2)', $timing->getDescription('Other queries'));
+    }
+
+    #[Test]
+    #[WithConfig('timing.measure_queries', true, false)]
+    #[WithConfig('timing.max_queries', 1, false)]
+    public function it_starts_counting_afresh_after_a_reset(): void
+    {
+        $this->runQuery('select 1', 1.0);
+        $this->runQuery('select 1', 1.0);
+        $this->timing()->reset();
+        $this->runQuery('select 2', 3.0);
+        $this->runQuery('select 2', 3.0);
+
+        $timing = $this->timing();
+        $this->assertSame(['select 2' => 6.0], $timing->events());
+        $this->assertSame('select 2 (×2)', $timing->getDescription('select 2'));
     }
 
     private function runQuery(string $sql, ?float $time, ?string $connection = null): void

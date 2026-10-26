@@ -8,21 +8,54 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Events\QueryExecuted;
 use Matchory\ServerTiming\Contracts\ServerTiming;
 
+use function array_key_exists;
+use function array_key_first;
 use function config;
+use function count;
 
-final readonly class EloquentSubscriber
+final class EloquentSubscriber
 {
-    public function __construct(private ServerTiming $timing) {}
+    private const string OTHER_QUERIES = 'Other queries';
+
+    /**
+     * Number of executions per query metric in the current request.
+     *
+     * @var array<string, int>
+     */
+    private array $counts = [];
+
+    public function __construct(private readonly ServerTiming $timing) {}
 
     public function handleQuery(QueryExecuted $event): void
     {
-        if ($event->time === null) {
-            $this->timing->addMetric($event->sql);
+        // This instance outlives ServerTiming::reset() (e.g. under Octane). A
+        // reset drops all our metrics at once, so if one of them is missing,
+        // the counts are left over from a previous request.
+        $first = array_key_first($this->counts);
 
-            return;
+        if ($first !== null && !array_key_exists($first, $this->timing->events())) {
+            $this->counts = [];
         }
 
-        $this->timing->setDuration($event->sql, $event->time);
+        $key = $event->sql;
+        $distinct = count($this->counts) - (int) isset($this->counts[self::OTHER_QUERIES]);
+
+        if (!isset($this->counts[$key]) && $distinct >= (int) config('timing.max_queries', 20)) {
+            $key = self::OTHER_QUERIES;
+        }
+
+        $count = $this->counts[$key] = ($this->counts[$key] ?? 0) + 1;
+        $previous = $this->timing->getDuration($key);
+
+        if ($event->time === null && $previous === null) {
+            $this->timing->addMetric($key);
+        } else {
+            $this->timing->setDuration($key, ($previous ?? 0.0) + ($event->time ?? 0.0));
+        }
+
+        if ($count > 1) {
+            $this->timing->describe($key, "{$key} (×{$count})");
+        }
     }
 
     public function handleTotal(QueryExecuted $event): void
@@ -54,9 +87,10 @@ final readonly class EloquentSubscriber
             config('timing.measure_queries', false)
             && config('app.env', 'production') !== 'production'
         ) {
+            // Bound to this instance, as the per-request counts live here.
             $events->listen(
                 QueryExecuted::class,
-                [self::class, 'handleQuery'],
+                [$this, 'handleQuery'],
             );
         }
     }
