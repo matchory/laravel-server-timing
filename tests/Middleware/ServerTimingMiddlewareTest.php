@@ -16,6 +16,76 @@ use Symfony\Component\Stopwatch\Stopwatch;
 
 class ServerTimingMiddlewareTest extends TestCase
 {
+    protected function tearDown(): void
+    {
+        ServerTimingMiddleware::flushState();
+
+        parent::tearDown();
+    }
+
+    #[Test]
+    public function it_is_bypassed_in_production_without_an_authorization_callback(): void
+    {
+        // @phpstan-ignore-next-line
+        $this->app['env'] = 'production';
+
+        $timing = new ServerTiming(new Stopwatch());
+        $middleware = new ServerTimingMiddleware($timing);
+        $response = $middleware->handle(new Request(), fn($req) => new Response());
+
+        $this->assertFalse($response->headers->has('Server-Timing'));
+        $this->assertSame([], $timing->events());
+    }
+
+    #[Test]
+    public function it_adds_the_header_in_production_if_the_callback_allows_it(): void
+    {
+        // @phpstan-ignore-next-line
+        $this->app['env'] = 'production';
+        $request = new Request();
+        $received = null;
+        ServerTimingMiddleware::authorize(function (Request $request) use (&$received): bool {
+            $received = $request;
+
+            return true;
+        });
+
+        $middleware = new ServerTimingMiddleware(new ServerTiming(new Stopwatch()));
+        $response = $middleware->handle($request, fn($req) => new Response());
+
+        $this->assertTrue($response->headers->has('Server-Timing'));
+        $this->assertSame($request, $received);
+    }
+
+    #[Test]
+    public function it_is_bypassed_if_the_callback_denies_it(): void
+    {
+        // @phpstan-ignore-next-line
+        $this->app['config']->set('timing.allow_origin', '*');
+        ServerTimingMiddleware::authorize(fn(Request $request): bool => false);
+
+        $timing = new ServerTiming(new Stopwatch());
+        $middleware = new ServerTimingMiddleware($timing);
+        $response = $middleware->handle(new Request(), fn($req) => new Response());
+
+        $this->assertFalse($response->headers->has('Server-Timing'));
+        $this->assertFalse($response->headers->has('Timing-Allow-Origin'));
+        $this->assertSame([], $timing->events());
+    }
+
+    #[Test]
+    public function it_keeps_the_callback_across_resets(): void
+    {
+        ServerTimingMiddleware::authorize(fn(Request $request): bool => false);
+
+        $timing = new ServerTiming(new Stopwatch());
+        $timing->reset();
+        $middleware = new ServerTimingMiddleware($timing);
+        $response = $middleware->handle(new Request(), fn($req) => new Response());
+
+        $this->assertFalse($response->headers->has('Server-Timing'));
+    }
+
     /**
      * @throws Exception
      * @throws ExpectationFailedException

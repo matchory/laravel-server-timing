@@ -21,7 +21,32 @@ final class ServerTimingMiddleware
 {
     private const string HEADER = 'Server-Timing';
 
+    /**
+     * @var (Closure(Request): bool)|null
+     */
+    private static ?Closure $authorizeUsing = null;
+
     public function __construct(private readonly ServerTiming $timing) {}
+
+    /**
+     * Registers a callback that decides whether a request receives the
+     * Server-Timing header, in every environment. Without a callback, the
+     * header is only sent outside of production.
+     *
+     * @param Closure(Request): bool $callback
+     */
+    public static function authorize(Closure $callback): void
+    {
+        self::$authorizeUsing = $callback;
+    }
+
+    /**
+     * Removes the authorization callback.
+     */
+    public static function flushState(): void
+    {
+        self::$authorizeUsing = null;
+    }
 
     /**
      * @param Request                    $request
@@ -31,7 +56,7 @@ final class ServerTimingMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!config('timing.enabled', true)) {
+        if (!config('timing.enabled', true) || !$this->isAuthorized($request)) {
             return $next($request);
         }
 
@@ -54,6 +79,15 @@ final class ServerTimingMiddleware
         }
 
         return $response;
+    }
+
+    private function isAuthorized(Request $request): bool
+    {
+        if (self::$authorizeUsing !== null) {
+            return (self::$authorizeUsing)($request);
+        }
+
+        return !app()->isProduction();
     }
 
     private function getElapsedTime(): float
