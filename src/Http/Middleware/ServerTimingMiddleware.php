@@ -49,6 +49,10 @@ final class ServerTimingMiddleware
 
         $response->headers->set(self::HEADER, $this->generateHeaders());
 
+        if ($origin = config('timing.allow_origin')) {
+            $response->headers->set('Timing-Allow-Origin', $origin);
+        }
+
         return $response;
     }
 

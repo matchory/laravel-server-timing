@@ -183,8 +183,29 @@ class ServerTimingMiddlewareTest extends TestCase
         $this->assertStringContainsString('a-3;desc="A";dur=3,', $header);
     }
 
+    #[Test]
+    public function it_does_not_set_timing_allow_origin_by_default(): void
+    {
+        $middleware = new ServerTimingMiddleware(new ServerTiming(new Stopwatch()));
+        $response = $middleware->handle(new Request(), fn($req) => new Response());
+
+        $this->assertFalse($response->headers->has('Timing-Allow-Origin'));
+    }
+
+    #[Test]
+    public function it_sets_timing_allow_origin_if_configured(): void
+    {
+        // @phpstan-ignore-next-line
+        $this->app['config']->set('timing.allow_origin', 'https://example.com');
+
+        $middleware = new ServerTimingMiddleware(new ServerTiming(new Stopwatch()));
+        $response = $middleware->handle(new Request(), fn($req) => new Response());
+
+        $this->assertSame('https://example.com', $response->headers->get('Timing-Allow-Origin'));
+    }
+
     /**
-     * @param Closure(ServerTiming): void $measure
+     * @param Closure(ServerTiming): mixed $measure
      */
     private function headerFor(Closure $measure): string
     {
