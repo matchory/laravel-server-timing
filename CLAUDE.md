@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Laravel package (`matchory/laravel-server-timing`) that adds `Server-Timing` HTTP headers to responses. Uses Symfony Stopwatch internally. Supports Laravel 10/11/12 and Octane. Requires PHP 8.2+.
+Laravel package (`matchory/laravel-server-timing`) that adds `Server-Timing` HTTP headers to responses. Uses Symfony Stopwatch internally. Supports Laravel 12/13 and Octane. Requires PHP 8.2+.
 
 ## Commands
 
