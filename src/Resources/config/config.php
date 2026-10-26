@@ -45,4 +45,14 @@ return [
      | the total time spent retrieving them from the cache store.
      */
     'measure_cache' => env('SERVER_TIMING_MEASURE_CACHE', false),
+
+    /*
+     |--------------------------------------------------------------------------
+     | Measure HTTP client requests
+     |--------------------------------------------------------------------------
+     |
+     | This setting, if enabled, will count outgoing requests made with the
+     | HTTP client, and measure the sum of their durations.
+     */
+    'measure_http' => env('SERVER_TIMING_MEASURE_HTTP', false),
 ];
