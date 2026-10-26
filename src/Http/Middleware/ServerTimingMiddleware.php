@@ -17,7 +17,7 @@ use function preg_replace;
 
 class ServerTimingMiddleware
 {
-    private const HEADER = 'Server-Timing';
+    private const string HEADER = 'Server-Timing';
 
     public function __construct(private readonly ServerTiming $timing) {}
 
