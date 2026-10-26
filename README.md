@@ -210,6 +210,30 @@ use Matchory\ServerTiming\Contracts\ServerTiming;
 $this->app->singleton(ServerTiming::class, MyServerTiming::class);
 ```
 
+Upgrading to v2
+---------------
+Version 2 contains the following breaking changes:
+
+- **Requirements:** PHP `^8.3`; Laravel 12 or 13. Support for Laravel 10 and 11 was dropped.
+- **Header in production:** the `Server-Timing` header is no longer sent in production by default. Register a callback with
+  `ServerTimingMiddleware::authorize()` (see [Production visibility](#production-visibility)). To restore the old behaviour, send it to everyone:
+  `ServerTimingMiddleware::authorize(fn () => true)`.
+- **`setDuration()`:** passing `null` as the duration throws a `TypeError`. Use `addMetric($key)` for metrics without a duration.
+- **Final classes:** all classes are `final`, and the formerly protected methods of `ServerTimingMiddleware` are private. Compose the classes
+  instead of extending them.
+- **Container bindings:** the package resolves `Contracts\ServerTiming` instead of the concrete class. To swap the implementation, implement
+  the contract and bind it (see [Dependency injection](#dependency-injection)).
+- **`measure_timing()`:** returns the result of the callable, or `null` without one, instead of `void`.
+- **Database metric:** the default connection is reported as `Database` instead of `Database (mysql)`. Other connections keep their name.
+- **`measure_queries`:** repeated queries are summed into one metric with an `(xN)` count, and beyond `max_queries` distinct queries, the rest
+  go into `Other queries`. Before, a repeated query showed only its last execution.
+- **Total:** Total is the elapsed time of the request, instead of the sum of all events. Nested events, like database time, are no longer
+  counted twice.
+- **Metric names:** metrics whose keys slug to the same name are suffixed with `-2`, `-3`, and so on, instead of sharing a name. Durations are
+  rounded to three decimals.
+- **Published configuration:** if you published `config/timing.php`, the new keys `max_queries`, `measure_cache`, `measure_http`,
+  `measure_queue` and `allow_origin` fall back to the package defaults. Copy them from the package configuration to change them in the file.
+
 Changelog
 ---------
 Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
