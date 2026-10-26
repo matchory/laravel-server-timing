@@ -24,17 +24,41 @@ class ServerTimingMiddlewareTest extends TestCase
     }
 
     #[Test]
-    public function it_is_bypassed_in_production_without_an_authorization_callback(): void
+    public function it_withholds_the_header_in_production_without_an_authorization_callback(): void
     {
         // @phpstan-ignore-next-line
         $this->app['env'] = 'production';
 
-        $timing = new ServerTiming(new Stopwatch());
-        $middleware = new ServerTimingMiddleware($timing);
+        $middleware = new ServerTimingMiddleware(new ServerTiming(new Stopwatch()));
         $response = $middleware->handle(new Request(), fn($req) => new Response());
 
         $this->assertFalse($response->headers->has('Server-Timing'));
-        $this->assertSame([], $timing->events());
+    }
+
+    #[Test]
+    public function it_authorizes_after_the_application_handled_the_request(): void
+    {
+        ServerTimingMiddleware::authorize(fn(Request $request): bool => $request->user() === 'admin');
+
+        $middleware = new ServerTimingMiddleware(new ServerTiming(new Stopwatch()));
+        $response = $middleware->handle(new Request(), function (Request $request) {
+            $request->setUserResolver(fn() => 'admin');
+
+            return new Response();
+        });
+
+        $this->assertTrue($response->headers->has('Server-Timing'));
+    }
+
+    #[Test]
+    public function it_withholds_the_header_if_the_callback_returns_null(): void
+    {
+        ServerTimingMiddleware::authorize(fn(Request $request) => null);
+
+        $middleware = new ServerTimingMiddleware(new ServerTiming(new Stopwatch()));
+        $response = $middleware->handle(new Request(), fn($req) => new Response());
+
+        $this->assertFalse($response->headers->has('Server-Timing'));
     }
 
     #[Test]
@@ -58,19 +82,17 @@ class ServerTimingMiddlewareTest extends TestCase
     }
 
     #[Test]
-    public function it_is_bypassed_if_the_callback_denies_it(): void
+    public function it_withholds_the_headers_if_the_callback_denies_it(): void
     {
         // @phpstan-ignore-next-line
         $this->app['config']->set('timing.allow_origin', '*');
         ServerTimingMiddleware::authorize(fn(Request $request): bool => false);
 
-        $timing = new ServerTiming(new Stopwatch());
-        $middleware = new ServerTimingMiddleware($timing);
+        $middleware = new ServerTimingMiddleware(new ServerTiming(new Stopwatch()));
         $response = $middleware->handle(new Request(), fn($req) => new Response());
 
         $this->assertFalse($response->headers->has('Server-Timing'));
         $this->assertFalse($response->headers->has('Timing-Allow-Origin'));
-        $this->assertSame([], $timing->events());
     }
 
     #[Test]
