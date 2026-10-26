@@ -35,4 +35,15 @@ return [
      | executed by the database, and add the timing as separate values
      */
     'measure_queries' => env('SERVER_TIMING_MEASURE_QUERIES', false),
+
+    /*
+     |--------------------------------------------------------------------------
+     | Timing-Allow-Origin
+     |--------------------------------------------------------------------------
+     |
+     | Browsers only expose server timings to scripts on other origins if the
+     | response allows it. If set, this value is sent as the
+     | Timing-Allow-Origin header, e.g. "*" or "https://example.com".
+     */
+    'allow_origin' => env('SERVER_TIMING_ALLOW_ORIGIN'),
 ];
