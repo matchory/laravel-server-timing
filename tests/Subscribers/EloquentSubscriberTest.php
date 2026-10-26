@@ -12,6 +12,7 @@ use Orchestra\Testbench\Attributes\WithConfig;
 use Orchestra\Testbench\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 
+use function app;
 use function event;
 
 #[WithConfig('app.env', 'local')]
@@ -142,7 +143,6 @@ class EloquentSubscriberTest extends TestCase
 
     private function timing(): ServerTiming
     {
-        return $this->app?->make(ServerTiming::class)
-            ?? $this->fail('Application not booted');
+        return app(ServerTiming::class);
     }
 }
