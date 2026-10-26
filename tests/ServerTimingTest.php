@@ -7,6 +7,7 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Exception;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use Symfony\Component\Stopwatch\Stopwatch;
 
 class ServerTimingTest extends TestCase
@@ -179,5 +180,21 @@ class ServerTimingTest extends TestCase
         $timing->reset();
 
         $this->assertCount(0, $timing->events());
+    }
+
+    #[Test]
+    public function it_stops_callable_events_that_throw(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+
+        try {
+            $timing->setDuration('callable', function () {
+                throw new RuntimeException('failed');
+            });
+        } catch (RuntimeException) {
+        }
+
+        $this->assertFalse($timing->hasStartedEvent('callable'));
+        $this->assertNotNull($timing->getDuration('callable'));
     }
 }

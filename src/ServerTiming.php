@@ -59,8 +59,12 @@ class ServerTiming
     ): static {
         if (is_callable($duration)) {
             $this->start($key);
-            $duration();
-            $this->stop($key);
+
+            try {
+                $duration();
+            } finally {
+                $this->stop($key);
+            }
         } else {
             $this->finishedEvents[$key] = $duration;
         }

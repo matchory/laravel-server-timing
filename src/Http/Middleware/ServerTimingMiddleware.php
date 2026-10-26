@@ -10,7 +10,8 @@ use Illuminate\Support\Str;
 use Matchory\ServerTiming\ServerTiming;
 use Symfony\Component\HttpFoundation\Response;
 
-use function array_sum;
+use function addcslashes;
+use function implode;
 use function microtime;
 use function preg_replace;
 
@@ -28,7 +29,7 @@ class ServerTimingMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (config('timing.enabled', true) === false) {
+        if (!config('timing.enabled', true)) {
             return $next($request);
         }
 
@@ -40,8 +41,9 @@ class ServerTimingMiddleware
         $this->timing->stop('App');
         $this->timing->stopAllUnfinishedEvents();
 
-        $total = array_sum($this->timing->events());
-        $this->timing->setDuration('Total', $total);
+        // Nested events (custom measures, database time) overlap with App,
+        // so summing all events would count them twice.
+        $this->timing->setDuration('Total', $this->getElapsedTime());
 
         $response->headers->set(self::HEADER, $this->generateHeaders());
 
@@ -55,22 +57,22 @@ class ServerTimingMiddleware
 
     protected function generateHeaders(): string
     {
-        $header = '';
+        $metrics = [];
 
         foreach ($this->timing->events() as $eventName => $duration) {
-            $header .= sprintf(
+            $metric = sprintf(
                 '%s;desc="%s"',
                 Str::slug($eventName),
-                $eventName,
+                addcslashes($eventName, '"\\'),
             );
 
             if (!is_null($duration)) {
-                $header .= ";dur={$duration}";
+                $metric .= ";dur={$duration}";
             }
 
-            $header .= ", ";
+            $metrics[] = $metric;
         }
 
-        return (string) preg_replace('/\s+/', ' ', $header);
+        return (string) preg_replace('/\s+/', ' ', implode(', ', $metrics));
     }
 }
