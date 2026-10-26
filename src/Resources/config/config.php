@@ -89,6 +89,17 @@ return [
 
     /*
      |--------------------------------------------------------------------------
+     | Add timings to the context
+     |--------------------------------------------------------------------------
+     |
+     | This setting, if enabled, will add the final timings to Laravel's
+     | Context as "server_timing" at the end of the request, so log entries
+     | written afterwards, e.g. in deferred callbacks, include them.
+     */
+    'context' => env('SERVER_TIMING_CONTEXT', false),
+
+    /*
+     |--------------------------------------------------------------------------
      | Timing-Allow-Origin
      |--------------------------------------------------------------------------
      |

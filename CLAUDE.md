@@ -28,7 +28,7 @@ All classes are `final`.
 
 **`ServerTiming`** — Default implementation, registered as a singleton with the contract aliased to it. Wraps Symfony Stopwatch to track named timing events. All durations in milliseconds. `describe()` stores a description separate from the key.
 
-**`ServerTimingMiddleware`** — Measures Bootstrap/App/Total (Total is elapsed request time), stops all unfinished events, and sets the `Server-Timing` header (slugged, de-duplicated names; escaped descriptions; durations rounded to 3 decimals) plus `Timing-Allow-Origin` if `allow_origin` is set. The header is sent outside production only, unless the static `authorize()` callback (run after the app handled the request) says otherwise; `flushState()` clears it.
+**`ServerTimingMiddleware`** — Measures Bootstrap/App/Total (Total is elapsed request time), stops all unfinished events, and sets the `Server-Timing` header (slugged, de-duplicated names; escaped descriptions; durations rounded to 3 decimals) plus `Timing-Allow-Origin` if `allow_origin` is set. The header is sent outside production only, unless the static `authorize()` callback (run after the app handled the request) says otherwise; `flushState()` clears it. With `context` enabled, it adds the final timings to Laravel's Context as `server_timing` before the authorization check.
 
 **`EloquentSubscriber`** — Listens to `QueryExecuted`. Aggregate DB time per connection (`measure_database`; default connection is `Database`, others `Database (name)`) and per-query metrics in non-production (`measure_queries`; repeats summed with `(xN)`, beyond `max_queries` into `Other queries`).
 
@@ -40,7 +40,7 @@ All classes are `final`.
 
 **`Facades\ServerTiming`** and **`measure_timing()`** helper — Convenience access to the singleton; `measure_timing()` returns the callable's result.
 
-**Config** published to `config/timing.php` with keys: `enabled`, `measure_database`, `measure_queries`, `max_queries`, `measure_cache`, `measure_http`, `measure_queue`, `measure_livewire`, `allow_origin`.
+**Config** published to `config/timing.php` with keys: `enabled`, `measure_database`, `measure_queries`, `max_queries`, `measure_cache`, `measure_http`, `measure_queue`, `measure_livewire`, `context`, `allow_origin`.
 
 ## Testing
 

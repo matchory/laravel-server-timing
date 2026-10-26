@@ -6,15 +6,18 @@ namespace Matchory\ServerTiming\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Str;
 use Matchory\ServerTiming\Contracts\ServerTiming;
 use Symfony\Component\HttpFoundation\Response;
 
 use function addcslashes;
+use function array_map;
 use function implode;
 use function microtime;
 use function number_format;
 use function preg_replace;
+use function round;
 use function rtrim;
 
 final class ServerTimingMiddleware
@@ -73,6 +76,14 @@ final class ServerTimingMiddleware
         // Nested events (custom measures, database time) overlap with App,
         // so summing all events would count them twice.
         $this->timing->setDuration('Total', $this->getElapsedTime());
+
+        // Timings stay on the server here, so they don't need authorization.
+        if (config('timing.context', false)) {
+            Context::add('server_timing', array_map(
+                fn(?float $duration) => $duration === null ? null : round($duration, 3),
+                $this->timing->events(),
+            ));
+        }
 
         // Checked after the application ran, so the callback can rely on
         // session and authentication state.

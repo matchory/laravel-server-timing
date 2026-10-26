@@ -31,6 +31,7 @@
         "illuminate/contracts": "^12.0|^13.0",
         "illuminate/database": "^12.0|^13.0",
         "illuminate/http": "^12.0|^13.0",
+        "illuminate/log": "^12.0|^13.0",
         "illuminate/support": "^12.0|^13.0",
         "symfony/stopwatch": "^6.2|^7.2|^8.0"
     },

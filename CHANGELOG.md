@@ -11,6 +11,7 @@ All notable changes to `laravel-server-timing` are documented in this file. The 
 - `time()` measures a callable and returns its result.
 - `describe()` sets a description separate from the metric key.
 - `ServerTimingMiddleware::authorize()` decides which requests receive the header; `flushState()` removes the callback.
+- `context` option, which adds the final timings to Laravel's Context, so later log entries include them.
 - `allow_origin` option, sent as the `Timing-Allow-Origin` header.
 - `max_queries` option; queries beyond it are summed into an `Other queries` metric.
 - Opt-in collectors for cache hits, misses and retrieval time (`measure_cache`), HTTP client requests (`measure_http`) and queued jobs

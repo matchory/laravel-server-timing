@@ -166,6 +166,19 @@ There is no collector for plain views, as Laravel has no event for the time it t
 $html = ServerTiming::time('Render', fn () => view('dashboard')->render());
 ```
 
+Timings in logs
+---------------
+To include the timings in your logs, enable the `context` option. At the end of the request, the middleware adds the final timings to
+Laravel's [Context](https://laravel.com/docs/context) as `server_timing`, a map of metric keys to durations in milliseconds:
+
+```json
+{"server_timing": {"Bootstrap": 12.4, "Database": 31.02, "App": 88.1, "Total": 100.5}}
+```
+
+Context is added to log entries when they are written, so only entries written after the request was measured include the timings: for
+example, those written in `defer()` callbacks or terminating callbacks. The timings are added whether or not the request receives the header,
+as they stay on the server.
+
 Configuration
 -------------
 To publish the configuration file to `config/timing.php`, run:
@@ -184,6 +197,7 @@ php artisan vendor:publish --tag=server-timing-config
 | `measure_http`     | `SERVER_TIMING_MEASURE_HTTP`     | `false` | HTTP client requests and the sum of their durations          |
 | `measure_queue`    | `SERVER_TIMING_MEASURE_QUEUE`    | `false` | Number of queued jobs                                        |
 | `measure_livewire` | `SERVER_TIMING_MEASURE_LIVEWIRE` | `false` | Livewire render and method call time per component           |
+| `context`          | `SERVER_TIMING_CONTEXT`          | `false` | Add the final timings to Laravel's Context for logs          |
 | `allow_origin`     | `SERVER_TIMING_ALLOW_ORIGIN`     | `null`  | Value of the `Timing-Allow-Origin` header                    |
 
 The collectors read their configuration when the application boots.
@@ -237,7 +251,7 @@ Version 2 contains the following breaking changes:
 - **Metric names:** metrics whose keys slug to the same name are suffixed with `-2`, `-3`, and so on, instead of sharing a name. Durations are
   rounded to three decimals.
 - **Published configuration:** if you published `config/timing.php`, the new keys `max_queries`, `measure_cache`, `measure_http`,
-  `measure_queue`, `measure_livewire` and `allow_origin` fall back to the package defaults. Copy them from the package configuration to change them in the file.
+  `measure_queue`, `measure_livewire`, `context` and `allow_origin` fall back to the package defaults. Copy them from the package configuration to change them in the file.
 
 Changelog
 ---------

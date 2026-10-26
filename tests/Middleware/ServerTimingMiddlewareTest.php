@@ -4,6 +4,7 @@ namespace Matchory\ServerTiming\Tests\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Context;
 use InvalidArgumentException;
 use Matchory\ServerTiming\Http\Middleware\ServerTimingMiddleware;
 use Matchory\ServerTiming\ServerTiming;
@@ -310,5 +311,51 @@ class ServerTimingMiddlewareTest extends TestCase
         });
 
         return (string) $response->headers->get('Server-Timing');
+    }
+
+    #[Test]
+    public function it_does_not_add_timings_to_the_context_by_default(): void
+    {
+        $middleware = new ServerTimingMiddleware(new ServerTiming(new Stopwatch()));
+        $middleware->handle(new Request(), fn($req) => new Response());
+
+        $this->assertFalse(Context::has('server_timing'));
+    }
+
+    #[Test]
+    public function it_adds_the_final_timings_to_the_context(): void
+    {
+        // @phpstan-ignore-next-line
+        $this->app['config']->set('timing.context', true);
+
+        $timing = new ServerTiming(new Stopwatch());
+        $middleware = new ServerTimingMiddleware($timing);
+        $middleware->handle(new Request(), function () use ($timing) {
+            $timing->setDuration('Database', 1.23456)->addMetric('Meta');
+
+            return new Response();
+        });
+
+        $context = Context::get('server_timing');
+
+        $this->assertSame(['Bootstrap', 'Database', 'Meta', 'App', 'Total'], array_keys($context));
+        $this->assertSame(1.235, $context['Database']);
+        $this->assertNull($context['Meta']);
+        $this->assertSame(round((float) $timing->getDuration('Total'), 3), $context['Total']);
+    }
+
+    #[Test]
+    public function it_adds_timings_to_the_context_even_if_the_header_is_withheld(): void
+    {
+        // @phpstan-ignore-next-line
+        $this->app['config']->set('timing.context', true);
+        // @phpstan-ignore-next-line
+        $this->app['env'] = 'production';
+
+        $middleware = new ServerTimingMiddleware(new ServerTiming(new Stopwatch()));
+        $response = $middleware->handle(new Request(), fn($req) => new Response());
+
+        $this->assertArrayNotHasKey('server-timing', $response->headers->all());
+        $this->assertArrayHasKey('Total', Context::get('server_timing'));
     }
 }
