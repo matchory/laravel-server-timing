@@ -37,13 +37,25 @@ Before submitting a pull request:
 - Check the codebase to ensure that your feature doesn't already exist.
 - Check the pull requests to ensure that another person hasn't already submitted the feature or fix.
 
+Development
+-----------
+Install the dependencies with `composer install`. Before submitting a pull request, run:
+
+```bash
+composer test     # PHPUnit
+composer analyze  # PHPStan, level 8
+composer fmt      # Laravel Pint, PER preset
+```
+
+CI runs the tests on PHP 8.3, 8.4 and 8.5 against Laravel 12 and 13, each with the lowest and the latest dependencies. It also checks
+formatting (`pint --test`), runs PHPStan and `composer audit`.
+
 Requirements
 ------------
-If the project maintainer has any additional requirements, you will find them listed here.
-
-- **[PSR-2 Coding Standard](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-2-coding-style-guide.md)** -
-  The easiest way to apply the conventions is to install [PHP Code Sniffer](https://pear.php.net/package/PHP_CodeSniffer).
-- **Add tests!** - Your patch won't be accepted if it doesn't have tests.
+- **[PER Coding Style](https://www.php-fig.org/per/coding-style/)** - Run `composer fmt` to apply it. Declare strict types in every file.
+- **Add tests!** - Your patch won't be accepted if it doesn't have tests. Tests use
+  [Orchestra Testbench](https://github.com/orchestral/testbench) and mark test methods with PHPUnit's `#[Test]` attribute instead of a
+  `test` prefix.
 - **Document any change in behaviour** - Make sure the `README.md` and any other relevant documentation are kept
   up-to-date.
 - **Consider our release cycle** - We try to follow [SemVer v2.0.0](https://semver.org/). Randomly breaking public APIs
