@@ -38,6 +38,17 @@ return [
 
     /*
      |--------------------------------------------------------------------------
+     | Maximum number of individual queries
+     |--------------------------------------------------------------------------
+     |
+     | Repeated queries are summed into one entry. Beyond this many distinct
+     | queries, the remainder is summed into a single "Other queries" entry,
+     | to keep the header within web server limits (often 4 or 8 KB).
+     */
+    'max_queries' => env('SERVER_TIMING_MAX_QUERIES', 20),
+
+    /*
+     |--------------------------------------------------------------------------
      | Timing-Allow-Origin
      |--------------------------------------------------------------------------
      |
