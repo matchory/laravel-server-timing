@@ -7,7 +7,7 @@ namespace Matchory\ServerTiming;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Matchory\ServerTiming\Contracts\ServerTiming as ServerTimingContract;
-use Matchory\ServerTiming\Subscribers\{EloquentSubscriber, OctaneSubscriber};
+use Matchory\ServerTiming\Subscribers\{CacheSubscriber, EloquentSubscriber, HttpClientSubscriber, OctaneSubscriber, QueueSubscriber};
 use Symfony\Component\Stopwatch\Stopwatch;
 
 use function implode;
@@ -28,6 +28,9 @@ final class ServerTimingServiceProvider extends ServiceProvider
     {
         Event::subscribe(OctaneSubscriber::class);
         Event::subscribe(EloquentSubscriber::class);
+        Event::subscribe(CacheSubscriber::class);
+        Event::subscribe(HttpClientSubscriber::class);
+        Event::subscribe(QueueSubscriber::class);
 
         if ($this->app->runningInConsole()) {
             $this->registerPublishing();
