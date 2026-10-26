@@ -6,16 +6,22 @@ namespace Matchory\ServerTiming\Subscribers;
 
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Events\QueryExecuted;
-use Matchory\ServerTiming\ServerTiming;
+use Matchory\ServerTiming\Contracts\ServerTiming;
 
 use function config;
 
-readonly class EloquentSubscriber
+final readonly class EloquentSubscriber
 {
     public function __construct(private ServerTiming $timing) {}
 
     public function handleQuery(QueryExecuted $event): void
     {
+        if ($event->time === null) {
+            $this->timing->addMetric($event->sql);
+
+            return;
+        }
+
         $this->timing->setDuration($event->sql, $event->time);
     }
 

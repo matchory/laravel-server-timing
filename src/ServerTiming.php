@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace Matchory\ServerTiming;
 
+use Matchory\ServerTiming\Contracts\ServerTiming as ServerTimingContract;
 use Symfony\Component\Stopwatch\Stopwatch;
 
+use function constant;
 use function defined;
 use function microtime;
 
-// @phpstan-ignore-next-line
-use const LARAVEL_START;
-
-class ServerTiming
+final class ServerTiming implements ServerTimingContract
 {
     /**
      * @var array<string, float|null>
@@ -53,23 +52,26 @@ class ServerTiming
         return $this->start;
     }
 
-    public function setDuration(
-        string $key,
-        callable|float|null $duration,
-    ): static {
+    public function setDuration(string $key, callable|float $duration): static
+    {
         if (is_callable($duration)) {
-            $this->start($key);
-
-            try {
-                $duration();
-            } finally {
-                $this->stop($key);
-            }
+            $this->time($key, $duration);
         } else {
             $this->finishedEvents[$key] = $duration;
         }
 
         return $this;
+    }
+
+    public function time(string $key, callable $callback): mixed
+    {
+        $this->start($key);
+
+        try {
+            return $callback();
+        } finally {
+            $this->stop($key);
+        }
     }
 
     public function addMetric(string $metric): static
@@ -150,7 +152,7 @@ class ServerTiming
         }
 
         if (defined('LARAVEL_START')) {
-            return (float) LARAVEL_START;
+            return (float) constant('LARAVEL_START');
         }
 
         /** @noinspection UnnecessaryCastingInspection */

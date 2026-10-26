@@ -6,6 +6,7 @@ namespace Matchory\ServerTiming;
 
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Matchory\ServerTiming\Contracts\ServerTiming as ServerTimingContract;
 use Matchory\ServerTiming\Subscribers\{EloquentSubscriber, OctaneSubscriber};
 use Symfony\Component\Stopwatch\Stopwatch;
 
@@ -18,7 +19,7 @@ use const DIRECTORY_SEPARATOR as DS;
  *
  * @bundle Matchory\ServerTiming
  */
-class ServerTimingServiceProvider extends ServiceProvider
+final class ServerTimingServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap the application services.
@@ -66,5 +67,6 @@ class ServerTimingServiceProvider extends ServiceProvider
             ServerTiming::class,
             fn() => new ServerTiming(new Stopwatch()),
         );
+        $this->app->alias(ServerTiming::class, ServerTimingContract::class);
     }
 }
