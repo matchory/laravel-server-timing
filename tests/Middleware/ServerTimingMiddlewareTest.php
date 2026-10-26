@@ -143,6 +143,46 @@ class ServerTimingMiddlewareTest extends TestCase
         $this->assertStringContainsString('e;desc="e";dur=0,', $header);
     }
 
+    #[Test]
+    public function it_falls_back_to_a_generated_name_for_empty_slugs(): void
+    {
+        $header = $this->headerFor(fn(ServerTiming $timing) => $timing->setDuration('!!!', 1.0));
+
+        $this->assertStringContainsString(', metric;desc="!!!";dur=1,', $header);
+    }
+
+    #[Test]
+    public function it_makes_metric_names_unique(): void
+    {
+        $header = $this->headerFor(function (ServerTiming $timing): void {
+            $timing->setDuration('DB Time', 1.0);
+            $timing->setDuration('db-time', 2.0);
+            $timing->setDuration('db time', 3.0);
+            $timing->setDuration('!!!', 4.0);
+            $timing->setDuration('???', 5.0);
+        });
+
+        $this->assertStringContainsString('db-time;desc="DB Time";dur=1,', $header);
+        $this->assertStringContainsString('db-time-2;desc="db-time";dur=2,', $header);
+        $this->assertStringContainsString('db-time-3;desc="db time";dur=3,', $header);
+        $this->assertStringContainsString('metric;desc="!!!";dur=4,', $header);
+        $this->assertStringContainsString('metric-2;desc="???";dur=5,', $header);
+    }
+
+    #[Test]
+    public function it_does_not_reuse_a_name_taken_by_a_later_suffix(): void
+    {
+        $header = $this->headerFor(function (ServerTiming $timing): void {
+            $timing->setDuration('a-2', 1.0);
+            $timing->setDuration('a', 2.0);
+            $timing->setDuration('A', 3.0);
+        });
+
+        $this->assertStringContainsString('a-2;desc="a-2";dur=1,', $header);
+        $this->assertStringContainsString('a;desc="a";dur=2,', $header);
+        $this->assertStringContainsString('a-3;desc="A";dur=3,', $header);
+    }
+
     /**
      * @param Closure(ServerTiming): void $measure
      */

@@ -62,9 +62,18 @@ final class ServerTimingMiddleware
         $metrics = [];
 
         foreach ($this->timing->events() as $eventName => $duration) {
+            // Different keys may slug to the same (or an empty) name, but
+            // browsers would merge or drop such metrics.
+            $base = Str::slug($eventName) ?: 'metric';
+            $name = $base;
+
+            for ($i = 2; isset($metrics[$name]); $i++) {
+                $name = "{$base}-{$i}";
+            }
+
             $metric = sprintf(
                 '%s;desc="%s"',
-                Str::slug($eventName),
+                $name,
                 addcslashes($this->timing->getDescription($eventName), '"\\'),
             );
 
@@ -72,7 +81,7 @@ final class ServerTimingMiddleware
                 $metric .= ';dur=' . $this->formatDuration($duration);
             }
 
-            $metrics[] = $metric;
+            $metrics[$name] = $metric;
         }
 
         return (string) preg_replace('/\s+/', ' ', implode(', ', $metrics));
