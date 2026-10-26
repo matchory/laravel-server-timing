@@ -29,7 +29,7 @@ final readonly class EloquentSubscriber
     {
         $key = 'Database';
 
-        if ($event->connectionName && $event->connectionName !== 'default') {
+        if ($event->connectionName !== config('database.default')) {
             $key .= " ({$event->connectionName})";
         }
 
