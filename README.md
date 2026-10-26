@@ -18,7 +18,7 @@ composer require matchory/laravel-server-timing
 Usage
 -----
 To add server-timing header information, you need to add the
-`\Matchory\ServerTiming\Middleware\ServerTimingMiddleware::class,` middleware to your HTTP Kernel. In order to get the
+`\Matchory\ServerTiming\Http\Middleware\ServerTimingMiddleware::class` middleware to your application (in `bootstrap/app.php`). In order to get the
 most accurate results, put the middleware as the first one to load in the middleware stack.
 
 By default, the middleware measures only three things, to keep it as light-weight as possible:
@@ -33,7 +33,7 @@ Here's an example from Chrome:
 
 Enabling automatic database timing
 ----------------------------------
-To enable database timing, you have to options built-in that you can enable via the configuration file:
+To enable database timing, there are two built-in options that you can enable via the configuration file:
 
 - `measure_database`: Measure total database timing. This will track the total time spent in database queries.
 - `measure_queries`: Measure database timing per query. This will track the time spent in each individual query and add
@@ -75,16 +75,16 @@ Adding textual information
 --------------------------
 You can also use the Server-Timing middleware to only set textual information without providing a duration.
 
+```php
+ServerTiming::addMetric("User: {$user->id}");
+```
+
 Publishing configuration file
 -----------------------------
 The configuration file could be published using:
 `php artisan vendor:publish --tag=server-timing-config`
 
 You can disable the middleware changing the `timing.enabled` configuration to false.
-
-```php
-ServerTiming::addMetric("User: {$user->id}");
-```
 
 Changelog
 ---------
