@@ -59,7 +59,7 @@ ServerTimingMiddleware::authorize(
 ```
 
 The callback replaces the default check in every environment, and its result is cast to `bool`. It runs after the application handled the
-request, so session and authentication state are available, and `$request->user()` works.
+request, so session and authentication state, like `$request->user()`, are available.
 
 The callback is stored statically. If you register one in a test, remove it afterwards with `ServerTimingMiddleware::flushState()`.
 
@@ -104,8 +104,8 @@ measure_timing('Running expensive task');
 measure_timing('Running expensive task');
 ```
 
-If you already know the duration, set it with `setDuration()`. It also accepts a callable, which is measured like with `time()`; then it
-returns the timing instance instead of the callable's result.
+If you already know the duration, set it with `setDuration()`. It also accepts a callable to measure, but unlike `time()`, it returns the
+timing instance instead of the result.
 
 ```php
 ServerTiming::setDuration('Running expensive task', 1_200);
