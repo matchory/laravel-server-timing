@@ -63,7 +63,7 @@ final class ServerTimingMiddleware
             $metric = sprintf(
                 '%s;desc="%s"',
                 Str::slug($eventName),
-                addcslashes($eventName, '"\\'),
+                addcslashes($this->timing->getDescription($eventName), '"\\'),
             );
 
             if (!is_null($duration)) {

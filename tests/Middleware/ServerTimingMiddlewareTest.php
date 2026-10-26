@@ -106,4 +106,21 @@ class ServerTimingMiddlewareTest extends TestCase
             5.0,
         );
     }
+
+    #[Test]
+    public function it_uses_the_event_description(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+        $middleware = new ServerTimingMiddleware($timing);
+        $response = $middleware->handle(new Request(), function () use ($timing) {
+            $timing->setDuration('db', 1.0)->describe('db', 'Database (3 queries)');
+
+            return new Response();
+        });
+
+        $this->assertStringContainsString(
+            'db;desc="Database (3 queries)";dur=1',
+            (string) $response->headers->get('Server-Timing'),
+        );
+    }
 }

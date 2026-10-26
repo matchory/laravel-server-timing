@@ -15,6 +15,8 @@ use Matchory\ServerTiming\Contracts\ServerTiming as ServerTimingContract;
  * @method static ServerTimingContract setDuration(string $key, callable|float $duration)
  * @method static mixed time(string $key, callable $callback)
  * @method static ServerTimingContract addMetric(string $metric)
+ * @method static ServerTimingContract describe(string $key, string $description)
+ * @method static string getDescription(string $key)
  * @method static array<string, float|null> events()
  * @method static bool hasStartedEvent(string $key)
  * @method static ServerTimingContract measure(string $key)

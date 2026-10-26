@@ -40,6 +40,14 @@ interface ServerTiming
     public function addMetric(string $metric): static;
 
     /**
+     * Sets the human-readable description of an event. The key remains the
+     * metric name; without a description, the key is used as description.
+     */
+    public function describe(string $key, string $description): static;
+
+    public function getDescription(string $key): string;
+
+    /**
      * @return array<string, float|null>
      */
     public function events(): array;

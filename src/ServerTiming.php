@@ -18,6 +18,11 @@ final class ServerTiming implements ServerTimingContract
      */
     private array $finishedEvents = [];
 
+    /**
+     * @var array<string, string>
+     */
+    private array $descriptions = [];
+
     private float $start = 0.0;
 
     /**
@@ -81,6 +86,18 @@ final class ServerTiming implements ServerTimingContract
         return $this;
     }
 
+    public function describe(string $key, string $description): static
+    {
+        $this->descriptions[$key] = $description;
+
+        return $this;
+    }
+
+    public function getDescription(string $key): string
+    {
+        return $this->descriptions[$key] ?? $key;
+    }
+
     /**
      * @return array<string, float|null>
      */
@@ -107,6 +124,7 @@ final class ServerTiming implements ServerTimingContract
     {
         $this->finishedEvents = [];
         $this->startedEvents = [];
+        $this->descriptions = [];
         $this->start = $this->resolveRequestStartTime();
         $this->stopwatch->reset();
     }

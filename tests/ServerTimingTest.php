@@ -240,4 +240,21 @@ class ServerTimingTest extends TestCase
         // @phpstan-ignore argument.type
         $timing->setDuration('key', null);
     }
+
+    #[Test]
+    public function it_describes_events(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+        $timing->setDuration('db', 1.0);
+
+        $this->assertSame('db', $timing->getDescription('db'));
+
+        $timing->describe('db', 'Database (3 queries)');
+
+        $this->assertSame('Database (3 queries)', $timing->getDescription('db'));
+
+        $timing->reset();
+
+        $this->assertSame('db', $timing->getDescription('db'));
+    }
 }
