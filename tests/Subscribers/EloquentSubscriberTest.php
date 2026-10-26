@@ -17,6 +17,12 @@ use PHPUnit\Framework\Attributes\Test;
 use function app;
 use function event;
 
+/**
+ * Subscribers read their config in subscribe(), when the provider boots, so
+ * the timing config is set with WithConfig's third argument `false`: from
+ * testbench 11.3 on it disables deferring until after boot; older versions
+ * ignore it and apply the config before boot anyway.
+ */
 #[WithConfig('app.env', 'local')]
 #[WithConfig('database.connections.secondary', ['driver' => 'sqlite', 'database' => ':memory:'])]
 class EloquentSubscriberTest extends TestCase

@@ -13,6 +13,12 @@ use Orchestra\Testbench\Attributes\WithConfig;
 use Orchestra\Testbench\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 
+/**
+ * Subscribers read their config in subscribe(), when the provider boots, so
+ * the timing config is set with WithConfig's third argument `false`: from
+ * testbench 11.3 on it disables deferring until after boot; older versions
+ * ignore it and apply the config before boot anyway.
+ */
 class QueueSubscriberTest extends TestCase
 {
     protected function getPackageProviders($app): array
@@ -29,8 +35,8 @@ class QueueSubscriberTest extends TestCase
     }
 
     #[Test]
-    #[WithConfig('timing.enabled', false, defer: false)]
-    #[WithConfig('timing.measure_queue', true, defer: false)]
+    #[WithConfig('timing.enabled', false, false)]
+    #[WithConfig('timing.measure_queue', true, false)]
     public function it_records_nothing_when_timing_is_disabled(): void
     {
         $this->queueJob();
@@ -39,7 +45,7 @@ class QueueSubscriberTest extends TestCase
     }
 
     #[Test]
-    #[WithConfig('timing.measure_queue', true, defer: false)]
+    #[WithConfig('timing.measure_queue', true, false)]
     public function it_counts_queued_jobs(): void
     {
         $timing = app(ServerTiming::class);
@@ -53,7 +59,7 @@ class QueueSubscriberTest extends TestCase
     }
 
     #[Test]
-    #[WithConfig('timing.measure_queue', true, defer: false)]
+    #[WithConfig('timing.measure_queue', true, false)]
     public function it_starts_over_after_a_reset(): void
     {
         $timing = app(ServerTiming::class);

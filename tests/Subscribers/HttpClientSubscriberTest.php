@@ -16,6 +16,12 @@ use Orchestra\Testbench\Attributes\WithConfig;
 use Orchestra\Testbench\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 
+/**
+ * Subscribers read their config in subscribe(), when the provider boots, so
+ * the timing config is set with WithConfig's third argument `false`: from
+ * testbench 11.3 on it disables deferring until after boot; older versions
+ * ignore it and apply the config before boot anyway.
+ */
 class HttpClientSubscriberTest extends TestCase
 {
     protected function getPackageProviders($app): array
@@ -34,8 +40,8 @@ class HttpClientSubscriberTest extends TestCase
     }
 
     #[Test]
-    #[WithConfig('timing.enabled', false, defer: false)]
-    #[WithConfig('timing.measure_http', true, defer: false)]
+    #[WithConfig('timing.enabled', false, false)]
+    #[WithConfig('timing.measure_http', true, false)]
     public function it_records_nothing_when_timing_is_disabled(): void
     {
         Http::fake();
@@ -46,7 +52,7 @@ class HttpClientSubscriberTest extends TestCase
     }
 
     #[Test]
-    #[WithConfig('timing.measure_http', true, defer: false)]
+    #[WithConfig('timing.measure_http', true, false)]
     public function it_counts_requests_including_pooled_ones(): void
     {
         $timing = app(ServerTiming::class);
@@ -64,7 +70,7 @@ class HttpClientSubscriberTest extends TestCase
     }
 
     #[Test]
-    #[WithConfig('timing.measure_http', true, defer: false)]
+    #[WithConfig('timing.measure_http', true, false)]
     public function it_pairs_concurrent_requests_with_their_responses(): void
     {
         $timing = app(ServerTiming::class);
@@ -84,7 +90,7 @@ class HttpClientSubscriberTest extends TestCase
     }
 
     #[Test]
-    #[WithConfig('timing.measure_http', true, defer: false)]
+    #[WithConfig('timing.measure_http', true, false)]
     public function it_measures_failed_connections(): void
     {
         $timing = app(ServerTiming::class);
@@ -102,7 +108,7 @@ class HttpClientSubscriberTest extends TestCase
     }
 
     #[Test]
-    #[WithConfig('timing.measure_http', true, defer: false)]
+    #[WithConfig('timing.measure_http', true, false)]
     public function it_pairs_real_failed_connections(): void
     {
         $timing = app(ServerTiming::class);
@@ -118,7 +124,7 @@ class HttpClientSubscriberTest extends TestCase
     }
 
     #[Test]
-    #[WithConfig('timing.measure_http', true, defer: false)]
+    #[WithConfig('timing.measure_http', true, false)]
     public function it_starts_over_after_a_reset(): void
     {
         $timing = app(ServerTiming::class);
