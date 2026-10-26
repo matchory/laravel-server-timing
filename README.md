@@ -144,9 +144,9 @@ There are two built-in options that you can enable via the configuration:
 > **Note:** The header grows with every metric. Some web servers, like nginx, reject responses with large headers (often beyond 4 or 8 KB).
 > Lower `max_queries`, or adjust the limits of your web server, if necessary.
 
-Cache, HTTP client and queue
-----------------------------
-Three more collectors are available, each disabled by default:
+Cache, HTTP client, queue and Livewire
+--------------------------------------
+Four more collectors are available, each disabled by default:
 
 - `measure_cache`: Adds a `Cache` metric with the number of hits and misses, like `Cache (2 hits, 1 miss)`, and the time spent retrieving keys
   from the cache store. Only retrieval is timed: writes, and the callback of `remember()` on a miss, are not included.
@@ -156,7 +156,11 @@ Three more collectors are available, each disabled by default:
 - `measure_queue`: Adds a `Queue` metric with the number of jobs pushed to a queue, like `Queued jobs (2)`, without a duration. Jobs run by the
   `sync` driver are not counted; their time is part of App.
 
-There is no collector for views, as Laravel has no event for the time it takes to render one. Measure rendering yourself, if you need to:
+- `measure_livewire`: Requires [Livewire](https://livewire.laravel.com) 3 or 4. Adds a metric per component with the time it took to render,
+  like `Livewire: counter`, and one per called method, like `Livewire: counter::increment`. Repeated renders and calls are summed and show
+  their count, like `Livewire: counter (x2)`. A component's render time includes the components nested in it.
+
+There is no collector for plain views, as Laravel has no event for the time it takes to render one. Measure rendering yourself, if you need to:
 
 ```php
 $html = ServerTiming::time('Render', fn () => view('dashboard')->render());
@@ -179,6 +183,7 @@ php artisan vendor:publish --tag=server-timing-config
 | `measure_cache`    | `SERVER_TIMING_MEASURE_CACHE`    | `false` | Cache hits, misses and retrieval time                        |
 | `measure_http`     | `SERVER_TIMING_MEASURE_HTTP`     | `false` | HTTP client requests and the sum of their durations          |
 | `measure_queue`    | `SERVER_TIMING_MEASURE_QUEUE`    | `false` | Number of queued jobs                                        |
+| `measure_livewire` | `SERVER_TIMING_MEASURE_LIVEWIRE` | `false` | Livewire render and method call time per component           |
 | `allow_origin`     | `SERVER_TIMING_ALLOW_ORIGIN`     | `null`  | Value of the `Timing-Allow-Origin` header                    |
 
 The collectors read their configuration when the application boots.
@@ -232,7 +237,7 @@ Version 2 contains the following breaking changes:
 - **Metric names:** metrics whose keys slug to the same name are suffixed with `-2`, `-3`, and so on, instead of sharing a name. Durations are
   rounded to three decimals.
 - **Published configuration:** if you published `config/timing.php`, the new keys `max_queries`, `measure_cache`, `measure_http`,
-  `measure_queue` and `allow_origin` fall back to the package defaults. Copy them from the package configuration to change them in the file.
+  `measure_queue`, `measure_livewire` and `allow_origin` fall back to the package defaults. Copy them from the package configuration to change them in the file.
 
 Changelog
 ---------

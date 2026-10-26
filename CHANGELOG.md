@@ -15,6 +15,7 @@ All notable changes to `laravel-server-timing` are documented in this file. The 
 - `max_queries` option; queries beyond it are summed into an `Other queries` metric.
 - Opt-in collectors for cache hits, misses and retrieval time (`measure_cache`), HTTP client requests (`measure_http`) and queued jobs
   (`measure_queue`).
+- Opt-in Livewire collector for render and method call time per component (`measure_livewire`).
 
 ### Changed
 

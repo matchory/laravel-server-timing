@@ -32,7 +32,7 @@ All classes are `final`.
 
 **`EloquentSubscriber`** — Listens to `QueryExecuted`. Aggregate DB time per connection (`measure_database`; default connection is `Database`, others `Database (name)`) and per-query metrics in non-production (`measure_queries`; repeats summed with `(xN)`, beyond `max_queries` into `Other queries`).
 
-**`CacheSubscriber`** (`measure_cache`), **`HttpClientSubscriber`** (`measure_http`), **`QueueSubscriber`** (`measure_queue`) — Opt-in collectors for cache hits/misses and retrieval time, summed HTTP client request time, and the count of queued jobs.
+**`CacheSubscriber`** (`measure_cache`), **`HttpClientSubscriber`** (`measure_http`), **`QueueSubscriber`** (`measure_queue`), **`LivewireSubscriber`** (`measure_livewire`) — Opt-in collectors for cache hits/misses and retrieval time, summed HTTP client request time, the count of queued jobs, and Livewire render/call time per component (via `Livewire::listen()` finishers; no-op without Livewire, which is only suggested).
 
 **`OctaneSubscriber`** — Resets `ServerTiming` on `WorkerStarting` and `RequestReceived`.
 
@@ -40,7 +40,7 @@ All classes are `final`.
 
 **`Facades\ServerTiming`** and **`measure_timing()`** helper — Convenience access to the singleton; `measure_timing()` returns the callable's result.
 
-**Config** published to `config/timing.php` with keys: `enabled`, `measure_database`, `measure_queries`, `max_queries`, `measure_cache`, `measure_http`, `measure_queue`, `allow_origin`.
+**Config** published to `config/timing.php` with keys: `enabled`, `measure_database`, `measure_queries`, `max_queries`, `measure_cache`, `measure_http`, `measure_queue`, `measure_livewire`, `allow_origin`.
 
 ## Testing
 

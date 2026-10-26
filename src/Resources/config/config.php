@@ -79,6 +79,16 @@ return [
 
     /*
      |--------------------------------------------------------------------------
+     | Measure Livewire components
+     |--------------------------------------------------------------------------
+     |
+     | This setting, if enabled, will measure the time Livewire components take
+     | to render, and the time their methods take to run. Requires Livewire.
+     */
+    'measure_livewire' => env('SERVER_TIMING_MEASURE_LIVEWIRE', false),
+
+    /*
+     |--------------------------------------------------------------------------
      | Timing-Allow-Origin
      |--------------------------------------------------------------------------
      |
