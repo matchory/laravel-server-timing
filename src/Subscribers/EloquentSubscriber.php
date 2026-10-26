@@ -6,10 +6,9 @@ namespace Matchory\ServerTiming\Subscribers;
 
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Events\QueryExecuted;
+use Laravel\Octane\Events\RequestReceived;
 use Matchory\ServerTiming\Contracts\ServerTiming;
 
-use function array_key_exists;
-use function array_key_first;
 use function config;
 use function count;
 
@@ -28,15 +27,6 @@ final class EloquentSubscriber
 
     public function handleQuery(QueryExecuted $event): void
     {
-        // This instance outlives ServerTiming::reset() (e.g. under Octane). A
-        // reset drops all our metrics at once, so if one of them is missing,
-        // the counts are left over from a previous request.
-        $first = array_key_first($this->counts);
-
-        if ($first !== null && !array_key_exists($first, $this->timing->events())) {
-            $this->counts = [];
-        }
-
         $key = $event->sql;
         $distinct = count($this->counts) - (int) isset($this->counts[self::OTHER_QUERIES]);
 
@@ -54,8 +44,16 @@ final class EloquentSubscriber
         }
 
         if ($count > 1) {
-            $this->timing->describe($key, "{$key} (×{$count})");
+            $this->timing->describe($key, "{$key} (x{$count})");
         }
+    }
+
+    /**
+     * Clears the per-request counts; this instance outlives Octane requests.
+     */
+    public function flush(): void
+    {
+        $this->counts = [];
     }
 
     public function handleTotal(QueryExecuted $event): void
@@ -91,6 +89,10 @@ final class EloquentSubscriber
             $events->listen(
                 QueryExecuted::class,
                 [$this, 'handleQuery'],
+            );
+            $events->listen(
+                RequestReceived::class,
+                [$this, 'flush'],
             );
         }
     }

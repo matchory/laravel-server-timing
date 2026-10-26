@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Matchory\ServerTiming\Tests\Subscribers;
 
 use Illuminate\Database\Events\QueryExecuted;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Laravel\Octane\Events\RequestReceived;
 use Matchory\ServerTiming\Contracts\ServerTiming;
 use Matchory\ServerTiming\ServerTimingServiceProvider;
 use Orchestra\Testbench\Attributes\WithConfig;
@@ -71,7 +73,7 @@ class EloquentSubscriberTest extends TestCase
 
         $timing = $this->timing();
         $this->assertSame([self::SQL => 4.0, 'select 1' => 3.0], $timing->events());
-        $this->assertSame(self::SQL . ' (×3)', $timing->getDescription(self::SQL));
+        $this->assertSame(self::SQL . ' (x3)', $timing->getDescription(self::SQL));
         $this->assertSame('select 1', $timing->getDescription('select 1'));
     }
 
@@ -87,7 +89,7 @@ class EloquentSubscriberTest extends TestCase
         $timing = $this->timing();
         $this->assertSame([self::SQL => null, 'select 1' => 2.0], $timing->events());
         $this->assertSame(self::SQL, $timing->getDescription(self::SQL));
-        $this->assertSame('select 1 (×3)', $timing->getDescription('select 1'));
+        $this->assertSame('select 1 (x3)', $timing->getDescription('select 1'));
     }
 
     #[Test]
@@ -117,23 +119,23 @@ class EloquentSubscriberTest extends TestCase
             'select 2' => 1.0,
             'Other queries' => 5.0,
         ], $timing->events());
-        $this->assertSame('Other queries (×2)', $timing->getDescription('Other queries'));
+        $this->assertSame('Other queries (x2)', $timing->getDescription('Other queries'));
     }
 
     #[Test]
     #[WithConfig('timing.measure_queries', true, false)]
     #[WithConfig('timing.max_queries', 1, false)]
-    public function it_starts_counting_afresh_after_a_reset(): void
+    public function it_starts_counting_afresh_on_each_octane_request(): void
     {
         $this->runQuery('select 1', 1.0);
         $this->runQuery('select 1', 1.0);
-        $this->timing()->reset();
+        event(new RequestReceived(app(), app(), new Request()));
         $this->runQuery('select 2', 3.0);
         $this->runQuery('select 2', 3.0);
 
         $timing = $this->timing();
         $this->assertSame(['select 2' => 6.0], $timing->events());
-        $this->assertSame('select 2 (×2)', $timing->getDescription('select 2'));
+        $this->assertSame('select 2 (x2)', $timing->getDescription('select 2'));
     }
 
     private function runQuery(string $sql, ?float $time, ?string $connection = null): void
