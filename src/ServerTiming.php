@@ -4,20 +4,30 @@ declare(strict_types=1);
 
 namespace Matchory\ServerTiming;
 
+use Closure;
+use Matchory\ServerTiming\Contracts\ServerTiming as ServerTimingContract;
 use Symfony\Component\Stopwatch\Stopwatch;
 
+use function constant;
 use function defined;
 use function microtime;
 
-// @phpstan-ignore-next-line
-use const LARAVEL_START;
-
-class ServerTiming
+final class ServerTiming implements ServerTimingContract
 {
     /**
      * @var array<string, float|null>
      */
     private array $finishedEvents = [];
+
+    /**
+     * @var array<string, string|(Closure(): string)>
+     */
+    private array $descriptions = [];
+
+    /**
+     * @var list<Closure(): void>
+     */
+    private array $resetCallbacks = [];
 
     private float $start = 0.0;
 
@@ -53,14 +63,10 @@ class ServerTiming
         return $this->start;
     }
 
-    public function setDuration(
-        string $key,
-        callable|float|null $duration,
-    ): static {
+    public function setDuration(string $key, callable|float $duration): static
+    {
         if (is_callable($duration)) {
-            $this->start($key);
-            $duration();
-            $this->stop($key);
+            $this->time($key, $duration);
         } else {
             $this->finishedEvents[$key] = $duration;
         }
@@ -68,11 +74,43 @@ class ServerTiming
         return $this;
     }
 
+    public function addDuration(string $key, float $duration): static
+    {
+        $this->finishedEvents[$key] = ($this->finishedEvents[$key] ?? 0.0) + $duration;
+
+        return $this;
+    }
+
+    public function time(string $key, callable $callback): mixed
+    {
+        $this->start($key);
+
+        try {
+            return $callback();
+        } finally {
+            $this->stop($key);
+        }
+    }
+
     public function addMetric(string $metric): static
     {
         $this->finishedEvents[$metric] = null;
 
         return $this;
+    }
+
+    public function describe(string $key, string|Closure $description): static
+    {
+        $this->descriptions[$key] = $description;
+
+        return $this;
+    }
+
+    public function getDescription(string $key): string
+    {
+        $description = $this->descriptions[$key] ?? $key;
+
+        return $description instanceof Closure ? $description() : $description;
     }
 
     /**
@@ -101,8 +139,20 @@ class ServerTiming
     {
         $this->finishedEvents = [];
         $this->startedEvents = [];
+        $this->descriptions = [];
         $this->start = $this->resolveRequestStartTime();
         $this->stopwatch->reset();
+
+        foreach ($this->resetCallbacks as $callback) {
+            $callback();
+        }
+    }
+
+    public function onReset(Closure $callback): static
+    {
+        $this->resetCallbacks[] = $callback;
+
+        return $this;
     }
 
     public function start(string $key): static
@@ -129,8 +179,9 @@ class ServerTiming
 
     public function stopAllUnfinishedEvents(): void
     {
+        // PHP turns numeric string keys into integers.
         foreach (array_keys($this->startedEvents) as $startedEventName) {
-            $this->stop($startedEventName);
+            $this->stop((string) $startedEventName);
         }
     }
 
@@ -146,7 +197,7 @@ class ServerTiming
         }
 
         if (defined('LARAVEL_START')) {
-            return (float) LARAVEL_START;
+            return (float) constant('LARAVEL_START');
         }
 
         /** @noinspection UnnecessaryCastingInspection */

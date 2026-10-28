@@ -6,19 +6,52 @@ namespace Matchory\ServerTiming\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Context;
 use Illuminate\Support\Str;
-use Matchory\ServerTiming\ServerTiming;
+use Matchory\ServerTiming\Contracts\ServerTiming;
 use Symfony\Component\HttpFoundation\Response;
 
-use function array_sum;
+use function addcslashes;
+use function array_map;
+use function implode;
 use function microtime;
+use function number_format;
 use function preg_replace;
+use function round;
+use function rtrim;
 
-class ServerTimingMiddleware
+final class ServerTimingMiddleware
 {
-    private const HEADER = 'Server-Timing';
+    private const string HEADER = 'Server-Timing';
+
+    /**
+     * @var (Closure(Request): mixed)|null
+     */
+    private static ?Closure $authorizeUsing = null;
 
     public function __construct(private readonly ServerTiming $timing) {}
+
+    /**
+     * Registers a callback that decides whether a request receives the
+     * Server-Timing header, in every environment. Without a callback, the
+     * header is only sent outside of production. The callback runs after the
+     * application has handled the request, so session and authentication
+     * state are available; its result is cast to bool.
+     *
+     * @param Closure(Request): mixed $callback
+     */
+    public static function authorize(Closure $callback): void
+    {
+        self::$authorizeUsing = $callback;
+    }
+
+    /**
+     * Removes the authorization callback.
+     */
+    public static function flushState(): void
+    {
+        self::$authorizeUsing = null;
+    }
 
     /**
      * @param Request                    $request
@@ -28,7 +61,9 @@ class ServerTimingMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (config('timing.enabled', true) === false) {
+        // If the middleware is registered twice, only the outer one measures,
+        // so App is not started twice.
+        if (!config('timing.enabled', true) || $this->timing->hasStartedEvent('App')) {
             return $next($request);
         }
 
@@ -40,37 +75,99 @@ class ServerTimingMiddleware
         $this->timing->stop('App');
         $this->timing->stopAllUnfinishedEvents();
 
-        $total = array_sum($this->timing->events());
-        $this->timing->setDuration('Total', $total);
+        // Nested events (custom measures, database time) overlap with App,
+        // so summing all events would count them twice.
+        $this->timing->setDuration('Total', $this->getElapsedTime());
+
+        // Timings stay on the server here, so they don't need authorization.
+        if (config('timing.context', false)) {
+            Context::add('server_timing', array_map(
+                fn(?float $duration) => $duration === null ? null : round($duration, 3),
+                $this->timing->events(),
+            ));
+        }
+
+        // Checked after the application ran, so the callback can rely on
+        // session and authentication state.
+        if (!$this->isAuthorized($request)) {
+            return $response;
+        }
 
         $response->headers->set(self::HEADER, $this->generateHeaders());
+
+        if ($origin = config('timing.allow_origin')) {
+            $response->headers->set('Timing-Allow-Origin', $origin);
+        }
 
         return $response;
     }
 
-    protected function getElapsedTime(): float
+    /**
+     * Resets the timings after the response has been sent, so a process that
+     * handles several requests (such as a test) doesn't carry them over. The
+     * reset is queued as the last terminating callback, so other callbacks
+     * can still read the timings.
+     */
+    public function terminate(): void
+    {
+        app()->terminating(fn() => $this->timing->reset());
+    }
+
+    private function isAuthorized(Request $request): bool
+    {
+        if (self::$authorizeUsing !== null) {
+            return (bool) (self::$authorizeUsing)($request);
+        }
+
+        return !app()->isProduction();
+    }
+
+    private function getElapsedTime(): float
     {
         return (microtime(true) - $this->timing->getStart()) * 1000;
     }
 
-    protected function generateHeaders(): string
+    private function generateHeaders(): string
     {
-        $header = '';
+        $metrics = [];
 
         foreach ($this->timing->events() as $eventName => $duration) {
-            $header .= sprintf(
+            // PHP turns numeric string keys into integers.
+            $eventName = (string) $eventName;
+
+            // Different keys may slug to the same (or an empty) name, but
+            // browsers would merge or drop such metrics.
+            $base = Str::slug($eventName);
+            $base = $base === '' ? 'metric' : $base;
+            $name = $base;
+
+            for ($i = 2; isset($metrics[$name]); $i++) {
+                $name = "{$base}-{$i}";
+            }
+
+            // Header values are not UTF-8, so descriptions are transliterated.
+            $metric = sprintf(
                 '%s;desc="%s"',
-                Str::slug($eventName),
-                $eventName,
+                $name,
+                addcslashes(Str::ascii($this->timing->getDescription($eventName)), '"\\'),
             );
 
             if (!is_null($duration)) {
-                $header .= ";dur={$duration}";
+                $metric .= ';dur=' . $this->formatDuration($duration);
             }
 
-            $header .= ", ";
+            $metrics[$name] = $metric;
         }
 
-        return (string) preg_replace('/\s+/', ' ', $header);
+        return (string) preg_replace('/\s+/', ' ', implode(', ', $metrics));
+    }
+
+    /**
+     * Formats a duration with at most three decimals and without exponent
+     * notation, trimming trailing zeros.
+     */
+    private function formatDuration(float $duration): string
+    {
+        return rtrim(rtrim(number_format($duration, 3, '.', ''), '0'), '.');
     }
 }

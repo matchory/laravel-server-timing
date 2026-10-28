@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Matchory\ServerTiming;
 
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
-use Matchory\ServerTiming\Subscribers\{EloquentSubscriber, OctaneSubscriber};
+use Matchory\ServerTiming\Contracts\ServerTiming as ServerTimingContract;
+use Matchory\ServerTiming\Subscribers\{CacheSubscriber, EloquentSubscriber, HttpClientSubscriber, LivewireSubscriber, OctaneSubscriber, QueueSubscriber};
 use Symfony\Component\Stopwatch\Stopwatch;
 
 use function implode;
@@ -18,7 +20,7 @@ use const DIRECTORY_SEPARATOR as DS;
  *
  * @bundle Matchory\ServerTiming
  */
-class ServerTimingServiceProvider extends ServiceProvider
+final class ServerTimingServiceProvider extends ServiceProvider
 {
     /**
      * Bootstrap the application services.
@@ -27,6 +29,10 @@ class ServerTimingServiceProvider extends ServiceProvider
     {
         Event::subscribe(OctaneSubscriber::class);
         Event::subscribe(EloquentSubscriber::class);
+        Event::subscribe(CacheSubscriber::class);
+        Event::subscribe(HttpClientSubscriber::class);
+        Event::subscribe(QueueSubscriber::class);
+        Event::subscribe(LivewireSubscriber::class);
 
         if ($this->app->runningInConsole()) {
             $this->registerPublishing();
@@ -64,7 +70,14 @@ class ServerTimingServiceProvider extends ServiceProvider
 
         $this->app->singleton(
             ServerTiming::class,
-            fn() => new ServerTiming(new Stopwatch()),
+            fn() => new ServerTiming(new Stopwatch(morePrecision: true)),
+        );
+
+        // Bound rather than aliased, so a binding of the contract made before
+        // this provider registers takes precedence.
+        $this->app->singletonIf(
+            ServerTimingContract::class,
+            fn(Application $app) => $app->make(ServerTiming::class),
         );
     }
 }

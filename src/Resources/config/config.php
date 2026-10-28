@@ -35,4 +35,82 @@ return [
      | executed by the database, and add the timing as separate values
      */
     'measure_queries' => env('SERVER_TIMING_MEASURE_QUERIES', false),
+
+    /*
+     |--------------------------------------------------------------------------
+     | Maximum number of individual queries
+     |--------------------------------------------------------------------------
+     |
+     | Repeated queries are summed into one entry. Beyond this many distinct
+     | queries, the remainder is summed into a single "Other queries" entry,
+     | to keep the header within web server limits (often 4 or 8 KB).
+     |
+     | With the default, the header can still reach about 4.5 KB on pages with
+     | many long queries. If nginx answers with a 502 ("upstream sent too big
+     | header"), raise its fastcgi_ or proxy_buffer_size along with the
+     | buffers, or lower this value. See the README for the settings.
+     */
+    'max_queries' => env('SERVER_TIMING_MAX_QUERIES', 20),
+
+    /*
+     |--------------------------------------------------------------------------
+     | Measure cache usage
+     |--------------------------------------------------------------------------
+     |
+     | This setting, if enabled, will count cache hits and misses, and measure
+     | the total time spent retrieving them from the cache store.
+     */
+    'measure_cache' => env('SERVER_TIMING_MEASURE_CACHE', false),
+
+    /*
+     |--------------------------------------------------------------------------
+     | Measure HTTP client requests
+     |--------------------------------------------------------------------------
+     |
+     | This setting, if enabled, will count outgoing requests made with the
+     | HTTP client, and measure the sum of their durations.
+     */
+    'measure_http' => env('SERVER_TIMING_MEASURE_HTTP', false),
+
+    /*
+     |--------------------------------------------------------------------------
+     | Measure queued jobs
+     |--------------------------------------------------------------------------
+     |
+     | This setting, if enabled, will count the jobs pushed to a queue during
+     | the request. Jobs executed by the sync driver are not counted.
+     */
+    'measure_queue' => env('SERVER_TIMING_MEASURE_QUEUE', false),
+
+    /*
+     |--------------------------------------------------------------------------
+     | Measure Livewire components
+     |--------------------------------------------------------------------------
+     |
+     | This setting, if enabled, will measure the time Livewire components take
+     | to render, and the time their methods take to run. Requires Livewire.
+     */
+    'measure_livewire' => env('SERVER_TIMING_MEASURE_LIVEWIRE', false),
+
+    /*
+     |--------------------------------------------------------------------------
+     | Add timings to the context
+     |--------------------------------------------------------------------------
+     |
+     | This setting, if enabled, will add the final timings to Laravel's
+     | Context as "server_timing" at the end of the request, so log entries
+     | written afterwards, e.g. in deferred callbacks, include them.
+     */
+    'context' => env('SERVER_TIMING_CONTEXT', false),
+
+    /*
+     |--------------------------------------------------------------------------
+     | Timing-Allow-Origin
+     |--------------------------------------------------------------------------
+     |
+     | Browsers only expose server timings to scripts on other origins if the
+     | response allows it. If set, this value is sent as the
+     | Timing-Allow-Origin header, e.g. "*" or "https://example.com".
+     */
+    'allow_origin' => env('SERVER_TIMING_ALLOW_ORIGIN'),
 ];

@@ -7,10 +7,17 @@ use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\Exception;
 use PHPUnit\Framework\ExpectationFailedException;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use Symfony\Component\Stopwatch\Stopwatch;
+use TypeError;
 
 class ServerTimingTest extends TestCase
 {
+    private const int SLEEP_MICROSECONDS = 10_000;
+
+    // Stopwatch rounds timestamps to 0.1 ms, so a 10 ms sleep may measure 9.9 ms.
+    private const float MIN_SLEEP_DURATION = 9.9;
+
     /**
      * @throws Exception
      * @throws ExpectationFailedException
@@ -50,18 +57,34 @@ class ServerTimingTest extends TestCase
      * @throws ExpectationFailedException
      */
     #[Test]
+    public function it_can_add_to_durations(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+        $timing->addDuration('key', 1.5);
+        $timing->addDuration('key', 2.25);
+        $timing->addMetric('metric');
+        $timing->addDuration('metric', 1.0);
+
+        $this->assertSame(['key' => 3.75, 'metric' => 1.0], $timing->events());
+    }
+
+    /**
+     * @throws Exception
+     * @throws ExpectationFailedException
+     */
+    #[Test]
     public function it_can_set_durations_with_callables(): void
     {
         $timing = new ServerTiming(new Stopwatch());
         $timing->setDuration('callable', function () {
-            sleep(1);
+            usleep(self::SLEEP_MICROSECONDS);
         });
 
         $events = $timing->events();
 
         $this->assertCount(1, $events);
         $this->assertArrayHasKey('callable', $events);
-        $this->assertTrue($events['callable'] >= 1000.0);
+        $this->assertGreaterThanOrEqual(self::MIN_SLEEP_DURATION, $events['callable']);
     }
 
     /**
@@ -111,14 +134,14 @@ class ServerTimingTest extends TestCase
     {
         $timing = new ServerTiming(new Stopwatch());
         $timing->start('key');
-        sleep(1);
+        usleep(self::SLEEP_MICROSECONDS);
         $timing->stop('key');
 
         $events = $timing->events();
 
         $this->assertCount(1, $events);
         $this->assertArrayHasKey('key', $events);
-        $this->assertGreaterThanOrEqual(1000.0, $events['key']);
+        $this->assertGreaterThanOrEqual(self::MIN_SLEEP_DURATION, $events['key']);
     }
 
     /**
@@ -130,14 +153,14 @@ class ServerTimingTest extends TestCase
     {
         $timing = new ServerTiming(new Stopwatch());
         $timing->measure('key');
-        sleep(1);
+        usleep(self::SLEEP_MICROSECONDS);
         $timing->measure('key');
 
         $events = $timing->events();
 
         $this->assertCount(1, $events);
         $this->assertArrayHasKey('key', $events);
-        $this->assertGreaterThanOrEqual(1000.0, $events['key']);
+        $this->assertGreaterThanOrEqual(self::MIN_SLEEP_DURATION, $events['key']);
     }
 
     /**
@@ -167,17 +190,115 @@ class ServerTimingTest extends TestCase
     {
         $timing = new ServerTiming(new Stopwatch());
         $timing->start('key');
-        sleep(1);
+        usleep(self::SLEEP_MICROSECONDS);
         $timing->stop('key');
 
         $events = $timing->events();
 
         $this->assertCount(1, $events);
         $this->assertArrayHasKey('key', $events);
-        $this->assertGreaterThanOrEqual(1000.0, $events['key']);
+        $this->assertGreaterThanOrEqual(self::MIN_SLEEP_DURATION, $events['key']);
 
         $timing->reset();
 
         $this->assertCount(0, $timing->events());
+    }
+
+    #[Test]
+    public function it_stops_callable_events_that_throw(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+
+        try {
+            $timing->setDuration('callable', function () {
+                throw new RuntimeException('failed');
+            });
+        } catch (RuntimeException) {
+        }
+
+        $this->assertFalse($timing->hasStartedEvent('callable'));
+        $this->assertNotNull($timing->getDuration('callable'));
+    }
+
+    #[Test]
+    public function it_returns_the_result_of_timed_callables(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+
+        $this->assertSame(42, $timing->time('callable', fn() => 42));
+        $this->assertFalse($timing->hasStartedEvent('callable'));
+        $this->assertNotNull($timing->getDuration('callable'));
+    }
+
+    #[Test]
+    public function it_stops_timed_callables_that_throw(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+
+        try {
+            $timing->time('callable', function () {
+                throw new RuntimeException('failed');
+            });
+        } catch (RuntimeException) {
+        }
+
+        $this->assertFalse($timing->hasStartedEvent('callable'));
+        $this->assertNotNull($timing->getDuration('callable'));
+    }
+
+    #[Test]
+    public function it_does_not_accept_null_durations(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+
+        $this->expectException(TypeError::class);
+
+        // @phpstan-ignore argument.type
+        $timing->setDuration('key', null);
+    }
+
+    #[Test]
+    public function it_describes_events(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+        $timing->setDuration('db', 1.0);
+
+        $this->assertSame('db', $timing->getDescription('db'));
+
+        $timing->describe('db', 'Database (3 queries)');
+
+        $this->assertSame('Database (3 queries)', $timing->getDescription('db'));
+
+        $timing->reset();
+
+        $this->assertSame('db', $timing->getDescription('db'));
+    }
+
+    #[Test]
+    public function it_resolves_closure_descriptions_when_read(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+        $count = 1;
+        $timing->describe('db', function () use (&$count): string {
+            return "Database ({$count} queries)";
+        });
+        $count = 3;
+
+        $this->assertSame('Database (3 queries)', $timing->getDescription('db'));
+    }
+
+    #[Test]
+    public function it_runs_reset_callbacks_on_every_reset(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+        $resets = 0;
+        $timing->onReset(function () use (&$resets): void {
+            $resets++;
+        });
+
+        $timing->reset();
+        $timing->reset();
+
+        $this->assertSame(2, $resets);
     }
 }
