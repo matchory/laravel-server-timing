@@ -148,8 +148,23 @@ There are two built-in options that you can enable via the configuration:
   remaining ones are summed into a single `Other queries` metric. Queries are never measured individually if `app.env` is `production`, even if
   the request is authorized.
 
-> **Note:** The header grows with every metric. Some web servers, like nginx, reject responses with large headers (often beyond 4 or 8 KB).
-> Lower `max_queries`, or adjust the limits of your web server, if necessary.
+> [!WARNING]
+> **Large headers can break responses.** With `measure_queries` and the defaults, the header grows to about 4.5 KB on pages with many long
+> queries (20 metrics with up to 200 characters of SQL each). nginx buffers response headers in one memory page (often 4 KB) by default and
+> answers with a `502 Bad Gateway` if they don't fit, logging `upstream sent too big header`; with 4 KB, this can happen from about 15 long
+> queries on. Raise the buffer size together with the buffers, as nginx refuses to start if only the size is raised:
+>
+> ```nginx
+> # PHP-FPM
+> fastcgi_buffer_size 16k;
+> fastcgi_buffers 4 16k;
+>
+> # Octane, or any other upstream behind proxy_pass
+> proxy_buffer_size 16k;
+> proxy_buffers 4 16k;
+> ```
+>
+> Alternatively, lower `max_queries`.
 
 Cache, HTTP client, queue and Livewire
 --------------------------------------

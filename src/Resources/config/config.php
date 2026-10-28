@@ -44,6 +44,11 @@ return [
      | Repeated queries are summed into one entry. Beyond this many distinct
      | queries, the remainder is summed into a single "Other queries" entry,
      | to keep the header within web server limits (often 4 or 8 KB).
+     |
+     | With the default, the header can still reach about 4.5 KB on pages with
+     | many long queries. If nginx answers with a 502 ("upstream sent too big
+     | header"), raise its fastcgi_ or proxy_buffer_size along with the
+     | buffers, or lower this value. See the README for the settings.
      */
     'max_queries' => env('SERVER_TIMING_MAX_QUERIES', 20),
 
