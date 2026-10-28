@@ -132,10 +132,11 @@ final class ServerTimingMiddleware
                 $name = "{$base}-{$i}";
             }
 
+            // Header values are not UTF-8, so descriptions are transliterated.
             $metric = sprintf(
                 '%s;desc="%s"',
                 $name,
-                addcslashes($this->timing->getDescription($eventName), '"\\'),
+                addcslashes(Str::ascii($this->timing->getDescription($eventName)), '"\\'),
             );
 
             if (!is_null($duration)) {

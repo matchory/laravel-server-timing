@@ -174,6 +174,16 @@ class ServerTimingMiddlewareTest extends TestCase
     }
 
     #[Test]
+    public function it_sends_only_ascii_descriptions(): void
+    {
+        $header = $this->headerFor(
+            fn(ServerTiming $timing) => $timing->setDuration('q', 1.0)->describe('q', 'select … from Müller'),
+        );
+
+        $this->assertStringContainsString('q;desc="select ... from Muller";dur=1', $header);
+    }
+
+    #[Test]
     public function it_does_not_end_the_header_with_a_separator(): void
     {
         $middleware = new ServerTimingMiddleware(new ServerTiming(new Stopwatch()));
