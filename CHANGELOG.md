@@ -3,7 +3,7 @@
 All notable changes to `laravel-server-timing` are documented in this file. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). See the [upgrade guide](README.md#upgrading-to-v2) for the breaking changes in 2.0.
 
-## 2.0.0 - Unreleased
+## 2.0.0 - 2026-10-28
 
 ### Added
 
