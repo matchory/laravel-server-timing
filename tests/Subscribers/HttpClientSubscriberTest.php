@@ -4,17 +4,14 @@ declare(strict_types=1);
 
 namespace Matchory\ServerTiming\Tests\Subscribers;
 
-use GuzzleHttp\Psr7\{Request as PsrRequest, Response as PsrResponse};
-use Illuminate\Http\Client\{ConnectionException, Pool, Request, Response};
-use Illuminate\Http\Client\Events\{ConnectionFailed, RequestSending, ResponseReceived};
-use Illuminate\Http\Request as HttpRequest;
+use Illuminate\Http\Client\Pool;
 use Illuminate\Support\Facades\Http;
-use Laravel\Octane\Events\RequestReceived;
 use Matchory\ServerTiming\Contracts\ServerTiming;
 use Matchory\ServerTiming\ServerTimingServiceProvider;
 use Orchestra\Testbench\Attributes\WithConfig;
 use Orchestra\Testbench\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use RuntimeException;
 
 /**
  * Subscribers read their config in subscribe(), when the provider boots, so
@@ -71,37 +68,47 @@ class HttpClientSubscriberTest extends TestCase
 
     #[Test]
     #[WithConfig('timing.measure_http', true, false)]
-    public function it_pairs_concurrent_requests_with_their_responses(): void
+    public function it_measures_each_pooled_request_until_it_settles(): void
     {
         $timing = app(ServerTiming::class);
-        $first = $this->request('https://example.test/first');
-        $second = $this->request('https://example.test/second');
+        Http::fake([
+            '*/slow' => function () {
+                usleep(20_000);
 
-        event(new RequestSending($first));
-        usleep(10_000);
-        event(new RequestSending($second));
-        event(new ResponseReceived($second, new Response(new PsrResponse())));
-        usleep(10_000);
-        event(new ResponseReceived($first, new Response(new PsrResponse())));
+                return Http::response();
+            },
+            '*/failing' => function () {
+                usleep(10_000);
+
+                return Http::failedConnection();
+            },
+        ]);
+
+        Http::pool(fn(Pool $pool) => [
+            $pool->get('https://example.test/slow'),
+            $pool->get('https://example.test/failing'),
+        ]);
 
         $this->assertSame('HTTP client (2 requests)', $timing->getDescription('HTTP'));
-        $this->assertGreaterThanOrEqual(20.0, $timing->getDuration('HTTP'));
-        $this->assertLessThan(30.0, $timing->getDuration('HTTP'));
+        $this->assertGreaterThanOrEqual(30.0, $timing->getDuration('HTTP'));
     }
 
     #[Test]
     #[WithConfig('timing.measure_http', true, false)]
-    public function it_measures_failed_connections(): void
+    public function it_measures_requests_that_fail_with_other_exceptions(): void
     {
         $timing = app(ServerTiming::class);
-        $request = $this->request('https://example.test');
+        Http::fake(function () {
+            usleep(10_000);
 
-        event(new RequestSending($request));
-        usleep(10_000);
-        event(new ConnectionFailed(
-            $this->request('https://example.test'),
-            new ConnectionException('Timed out'),
-        ));
+            throw new RuntimeException('Broken middleware');
+        });
+
+        try {
+            Http::get('https://example.test');
+            $this->fail('The request should have failed.');
+        } catch (RuntimeException) {
+        }
 
         $this->assertSame('HTTP client (1 request)', $timing->getDescription('HTTP'));
         $this->assertGreaterThanOrEqual(10.0, $timing->getDuration('HTTP'));
@@ -128,21 +135,21 @@ class HttpClientSubscriberTest extends TestCase
     public function it_starts_over_after_a_reset(): void
     {
         $timing = app(ServerTiming::class);
-        $pending = $this->request('https://example.test');
-        event(new RequestSending($pending));
-        event(new RequestSending($this->request('https://example.test/other')));
-        usleep(10_000);
+        Http::fake([
+            '*/interrupted' => function () use ($timing) {
+                usleep(10_000);
+                $timing->reset();
 
-        app('events')->dispatch(new RequestReceived(app(), app(), new HttpRequest()));
-        event(new RequestSending($this->request('https://example.test/next')));
-        event(new ResponseReceived($pending, new Response(new PsrResponse())));
+                return Http::response();
+            },
+            '*' => Http::response(),
+        ]);
+
+        Http::get('https://example.test/before');
+        Http::get('https://example.test/interrupted');
+        Http::get('https://example.test/after');
 
         $this->assertSame('HTTP client (1 request)', $timing->getDescription('HTTP'));
         $this->assertLessThan(10.0, $timing->getDuration('HTTP'));
-    }
-
-    private function request(string $url): Request
-    {
-        return new Request(new PsrRequest('GET', $url));
     }
 }

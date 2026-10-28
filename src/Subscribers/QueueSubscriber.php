@@ -6,7 +6,6 @@ namespace Matchory\ServerTiming\Subscribers;
 
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Queue\Events\JobQueued;
-use Laravel\Octane\Events\RequestReceived;
 use Matchory\ServerTiming\Contracts\ServerTiming;
 
 use function config;
@@ -14,8 +13,8 @@ use function config;
 /**
  * Counts the jobs pushed to a queue.
  *
- * The subscriber lives for the worker lifetime, so its counter is flushed on
- * every Octane request.
+ * The subscriber outlives requests under Octane, so its counter is flushed
+ * whenever the timings are reset.
  */
 final class QueueSubscriber
 {
@@ -46,6 +45,6 @@ final class QueueSubscriber
         }
 
         $events->listen(JobQueued::class, [$this, 'handleQueued']);
-        $events->listen(RequestReceived::class, [$this, 'flush']);
+        $this->timing->onReset($this->flush(...));
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Matchory\ServerTiming\Contracts;
 
+use Closure;
+
 interface ServerTiming
 {
     /**
@@ -47,8 +49,12 @@ interface ServerTiming
     /**
      * Sets the human-readable description of an event. The key remains the
      * metric name; without a description, the key is used as description.
+     * A closure is called when the description is read, so collectors can
+     * describe values that change with every measurement cheaply.
+     *
+     * @param string|(Closure(): string) $description
      */
-    public function describe(string $key, string $description): static;
+    public function describe(string $key, string|Closure $description): static;
 
     public function getDescription(string $key): string;
 
@@ -65,6 +71,14 @@ interface ServerTiming
     public function measure(string $key): static;
 
     public function reset(): void;
+
+    /**
+     * Registers a callback that runs on every reset, so collectors can clear
+     * their per-request state along with the timings.
+     *
+     * @param Closure(): void $callback
+     */
+    public function onReset(Closure $callback): static;
 
     public function start(string $key): static;
 

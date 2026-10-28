@@ -61,7 +61,9 @@ final class ServerTimingMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!config('timing.enabled', true)) {
+        // If the middleware is registered twice, only the outer one measures,
+        // so App is not started twice.
+        if (!config('timing.enabled', true) || $this->timing->hasStartedEvent('App')) {
             return $next($request);
         }
 
@@ -98,6 +100,17 @@ final class ServerTimingMiddleware
         }
 
         return $response;
+    }
+
+    /**
+     * Resets the timings after the response has been sent, so a process that
+     * handles several requests (such as a test) doesn't carry them over. The
+     * reset is queued as the last terminating callback, so other callbacks
+     * can still read the timings.
+     */
+    public function terminate(): void
+    {
+        app()->terminating(fn() => $this->timing->reset());
     }
 
     private function isAuthorized(Request $request): bool

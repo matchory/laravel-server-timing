@@ -16,7 +16,7 @@ use Matchory\ServerTiming\Contracts\ServerTiming as ServerTimingContract;
  * @method static ServerTimingContract addDuration(string $key, float $duration)
  * @method static mixed time(string $key, callable $callback)
  * @method static ServerTimingContract addMetric(string $metric)
- * @method static ServerTimingContract describe(string $key, string $description)
+ * @method static ServerTimingContract describe(string $key, string|\Closure $description)
  * @method static string getDescription(string $key)
  * @method static array<string, float|null> events()
  * @method static bool hasStartedEvent(string $key)
@@ -25,6 +25,7 @@ use Matchory\ServerTiming\Contracts\ServerTiming as ServerTimingContract;
  * @method static ServerTimingContract stop(string $key)
  * @method static void stopAllUnfinishedEvents()
  * @method static void reset()
+ * @method static ServerTimingContract onReset(\Closure $callback)
  * @bundle Matchory\ServerTiming\Facades
  */
 final class ServerTiming extends Facade

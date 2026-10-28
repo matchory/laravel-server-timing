@@ -9,7 +9,8 @@ All notable changes to `laravel-server-timing` are documented in this file. The 
 
 - `Contracts\ServerTiming` contract, resolved by the middleware, subscribers, facade and `measure_timing()`.
 - `time()` measures a callable and returns its result.
-- `describe()` sets a description separate from the metric key.
+- `describe()` sets a description separate from the metric key; a closure is called when the description is read.
+- `onReset()` registers a callback that runs whenever the timings are reset, to clear the state of custom collectors.
 - `addDuration()` adds to the duration of an event, to sum up repeated work.
 - `ServerTimingMiddleware::authorize()` decides which requests receive the header; `flushState()` removes the callback.
 - `context` option, which adds the final timings to Laravel's Context, so later log entries include them.
@@ -31,10 +32,14 @@ All notable changes to `laravel-server-timing` are documented in this file. The 
 - Queries are named `query-1`, `query-2`, ...; the SQL is the description, cut short after 200 characters.
 - Metric names are unique (`-2`, `-3`, ...) and never empty; durations are rounded to three decimals.
 - Measured events have 0.1 ms precision instead of whole milliseconds.
+- Timings and collector state are reset after the response has been sent, so they no longer carry over to the next request in the same
+  process, such as in a test.
 
 ### Fixed
 
 - Quotes and backslashes in descriptions are escaped, so queries with quoted identifiers no longer produce an invalid header.
+- Descriptions are transliterated to ASCII, as header values are not UTF-8.
+- If the middleware is registered twice, only the outer one measures, so App is no longer counted twice.
 - Total is the elapsed request time, instead of a sum of all events that counted nested events twice.
 - The header no longer ends with a trailing separator.
 - Events are stopped even if the measured callable throws.

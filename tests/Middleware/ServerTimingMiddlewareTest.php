@@ -382,4 +382,45 @@ class ServerTimingMiddlewareTest extends TestCase
         $this->assertArrayNotHasKey('server-timing', $response->headers->all());
         $this->assertArrayHasKey('Total', Context::get('server_timing'));
     }
+
+    #[Test]
+    public function it_measures_only_once_if_registered_twice(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+        $middleware = new ServerTimingMiddleware($timing);
+
+        $response = $middleware->handle(new Request(), function (Request $request) use ($middleware) {
+            return $middleware->handle($request, function () {
+                usleep(20_000);
+
+                return new Response();
+            });
+        });
+
+        // App would cover the inner period twice if both started it.
+        $this->assertLessThan(35.0, $timing->getDuration('App'));
+        $this->assertTrue($response->headers->has('Server-Timing'));
+    }
+
+    #[Test]
+    public function it_resets_the_timings_after_other_terminating_callbacks(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+        $middleware = new ServerTimingMiddleware($timing);
+        $middleware->handle(new Request(), function () use ($timing) {
+            $timing->setDuration('key', 1.0);
+
+            return new Response();
+        });
+        $seen = null;
+        $this->app?->terminating(function () use ($timing, &$seen): void {
+            $seen = $timing->getDuration('key');
+        });
+
+        $middleware->terminate();
+        $this->app?->terminate();
+
+        $this->assertSame(1.0, $seen);
+        $this->assertSame([], $timing->events());
+    }
 }

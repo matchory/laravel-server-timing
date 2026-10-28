@@ -6,7 +6,6 @@ namespace Matchory\ServerTiming\Subscribers;
 
 use Closure;
 use Illuminate\Contracts\Events\Dispatcher;
-use Laravel\Octane\Events\RequestReceived;
 use Livewire\Component;
 use Livewire\Livewire;
 use Matchory\ServerTiming\Contracts\ServerTiming;
@@ -19,8 +18,8 @@ use function hrtime;
  * Measures the time Livewire components take to render, and the time their
  * methods take to run, summed per component and method.
  *
- * The subscriber lives for the worker lifetime, so its counts are flushed on
- * every Octane request.
+ * The subscriber outlives requests under Octane, so its counts are flushed
+ * whenever the timings are reset.
  */
 final class LivewireSubscriber
 {
@@ -55,7 +54,7 @@ final class LivewireSubscriber
         Livewire::listen('call', fn(Component $component, string $method) => $this->measure(
             "Livewire: {$component->getName()}::{$method}",
         ));
-        $events->listen(RequestReceived::class, [$this, 'flush']);
+        $this->timing->onReset($this->flush(...));
     }
 
     private function measure(string $key): Closure

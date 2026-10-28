@@ -7,7 +7,6 @@ namespace Matchory\ServerTiming\Subscribers;
 use Illuminate\Cache\Events\{CacheHit, CacheMissed, RetrievingKey, RetrievingManyKeys};
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Str;
-use Laravel\Octane\Events\RequestReceived;
 use Matchory\ServerTiming\Contracts\ServerTiming;
 
 use function config;
@@ -16,8 +15,8 @@ use function hrtime;
 /**
  * Counts cache hits and misses, and measures the time spent retrieving them.
  *
- * The subscriber lives for the worker lifetime, so its counters are flushed
- * on every Octane request.
+ * The subscriber outlives requests under Octane, so its counters are flushed
+ * whenever the timings are reset.
  */
 final class CacheSubscriber
 {
@@ -65,7 +64,7 @@ final class CacheSubscriber
         );
         $events->listen(CacheHit::class, [$this, 'handleHit']);
         $events->listen(CacheMissed::class, [$this, 'handleMiss']);
-        $events->listen(RequestReceived::class, [$this, 'flush']);
+        $this->timing->onReset($this->flush(...));
     }
 
     private function record(bool $hit): void
@@ -81,14 +80,17 @@ final class CacheSubscriber
             $this->retrievalStart = null;
         }
 
-        $this->timing
-            ->addDuration(self::KEY, $duration)
-            ->describe(self::KEY, sprintf(
+        $this->timing->addDuration(self::KEY, $duration);
+
+        // Built when read rather than on every hit, as reads can be many.
+        if ($this->hits + $this->misses === 1) {
+            $this->timing->describe(self::KEY, fn() => sprintf(
                 'Cache (%d %s, %d %s)',
                 $this->hits,
                 Str::plural('hit', $this->hits),
                 $this->misses,
                 Str::plural('miss', $this->misses),
             ));
+        }
     }
 }

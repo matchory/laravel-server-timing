@@ -273,4 +273,32 @@ class ServerTimingTest extends TestCase
 
         $this->assertSame('db', $timing->getDescription('db'));
     }
+
+    #[Test]
+    public function it_resolves_closure_descriptions_when_read(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+        $count = 1;
+        $timing->describe('db', function () use (&$count): string {
+            return "Database ({$count} queries)";
+        });
+        $count = 3;
+
+        $this->assertSame('Database (3 queries)', $timing->getDescription('db'));
+    }
+
+    #[Test]
+    public function it_runs_reset_callbacks_on_every_reset(): void
+    {
+        $timing = new ServerTiming(new Stopwatch());
+        $resets = 0;
+        $timing->onReset(function () use (&$resets): void {
+            $resets++;
+        });
+
+        $timing->reset();
+        $timing->reset();
+
+        $this->assertSame(2, $resets);
+    }
 }

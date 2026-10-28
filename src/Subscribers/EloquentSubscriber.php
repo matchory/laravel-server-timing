@@ -7,7 +7,6 @@ namespace Matchory\ServerTiming\Subscribers;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Support\Str;
-use Laravel\Octane\Events\RequestReceived;
 use Matchory\ServerTiming\Contracts\ServerTiming;
 
 use function config;
@@ -65,7 +64,8 @@ final class EloquentSubscriber
     }
 
     /**
-     * Clears the per-request state; this instance outlives Octane requests.
+     * Clears the per-request state; this instance outlives Octane requests,
+     * so it runs whenever the timings are reset.
      */
     public function flush(): void
     {
@@ -77,6 +77,8 @@ final class EloquentSubscriber
     {
         $key = 'Database';
 
+        // Read per query rather than at boot, as apps may switch the default
+        // connection during a request (e.g. for tenancy).
         if ($event->connectionName !== config('database.default')) {
             $key .= " ({$event->connectionName})";
         }
@@ -99,7 +101,7 @@ final class EloquentSubscriber
 
         if (
             config('timing.measure_queries', false)
-            && config('app.env', 'production') !== 'production'
+            && !app()->isProduction()
         ) {
             $this->maxQueries = (int) config('timing.max_queries', 20);
 
@@ -108,10 +110,7 @@ final class EloquentSubscriber
                 QueryExecuted::class,
                 [$this, 'handleQuery'],
             );
-            $events->listen(
-                RequestReceived::class,
-                [$this, 'flush'],
-            );
+            $this->timing->onReset($this->flush(...));
         }
     }
 }

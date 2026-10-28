@@ -217,6 +217,10 @@ Octane
 The package works with [Laravel Octane](https://github.com/laravel/octane). All timings and collector state are reset when a request is received,
 so nothing leaks between requests. As the worker is already booted, Bootstrap is close to zero under Octane.
 
+Outside of Octane, the middleware resets the timings after the response has been sent, once all other terminating callbacks have run, so a
+process that handles several requests, like a test, starts each one fresh. To clear the state of your own collectors along with the timings,
+register a callback with `ServerTiming::onReset()`.
+
 Dependency injection
 --------------------
 To use the timings without the facade, type-hint the contract, `Matchory\ServerTiming\Contracts\ServerTiming`:
@@ -258,6 +262,8 @@ Version 2 contains the following breaking changes:
   counted twice.
 - **Metric names:** metrics whose keys slug to the same name are suffixed with `-2`, `-3`, and so on, instead of sharing a name. Durations are
   rounded to three decimals.
+- **Reset after the response:** the timings are reset once the response has been sent. In tests that read them after a request, read them in
+  the request instead, or from Laravel's Context with the `context` option.
 - **Published configuration:** if you published `config/timing.php`, the new keys `max_queries`, `measure_cache`, `measure_http`,
   `measure_queue`, `measure_livewire`, `context` and `allow_origin` fall back to the package defaults. Copy them from the package configuration to change them in the file.
 

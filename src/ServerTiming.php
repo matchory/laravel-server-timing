@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Matchory\ServerTiming;
 
+use Closure;
 use Matchory\ServerTiming\Contracts\ServerTiming as ServerTimingContract;
 use Symfony\Component\Stopwatch\Stopwatch;
 
@@ -19,9 +20,14 @@ final class ServerTiming implements ServerTimingContract
     private array $finishedEvents = [];
 
     /**
-     * @var array<string, string>
+     * @var array<string, string|(Closure(): string)>
      */
     private array $descriptions = [];
+
+    /**
+     * @var list<Closure(): void>
+     */
+    private array $resetCallbacks = [];
 
     private float $start = 0.0;
 
@@ -93,7 +99,7 @@ final class ServerTiming implements ServerTimingContract
         return $this;
     }
 
-    public function describe(string $key, string $description): static
+    public function describe(string $key, string|Closure $description): static
     {
         $this->descriptions[$key] = $description;
 
@@ -102,7 +108,9 @@ final class ServerTiming implements ServerTimingContract
 
     public function getDescription(string $key): string
     {
-        return $this->descriptions[$key] ?? $key;
+        $description = $this->descriptions[$key] ?? $key;
+
+        return $description instanceof Closure ? $description() : $description;
     }
 
     /**
@@ -134,6 +142,17 @@ final class ServerTiming implements ServerTimingContract
         $this->descriptions = [];
         $this->start = $this->resolveRequestStartTime();
         $this->stopwatch->reset();
+
+        foreach ($this->resetCallbacks as $callback) {
+            $callback();
+        }
+    }
+
+    public function onReset(Closure $callback): static
+    {
+        $this->resetCallbacks[] = $callback;
+
+        return $this;
     }
 
     public function start(string $key): static

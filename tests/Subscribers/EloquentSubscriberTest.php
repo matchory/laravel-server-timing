@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Matchory\ServerTiming\Tests\Subscribers;
 
+use Illuminate\Foundation\Application;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Laravel\Octane\Events\RequestReceived;
 use Matchory\ServerTiming\Contracts\ServerTiming;
 use Matchory\ServerTiming\ServerTimingServiceProvider;
-use Orchestra\Testbench\Attributes\WithConfig;
+use Orchestra\Testbench\Attributes\{DefineEnvironment, WithConfig};
 use Orchestra\Testbench\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 
@@ -23,7 +24,6 @@ use function event;
  * testbench 11.3 on it disables deferring until after boot; older versions
  * ignore it and apply the config before boot anyway.
  */
-#[WithConfig('app.env', 'local')]
 #[WithConfig('database.connections.secondary', ['driver' => 'sqlite', 'database' => ':memory:'])]
 class EloquentSubscriberTest extends TestCase
 {
@@ -32,6 +32,15 @@ class EloquentSubscriberTest extends TestCase
     protected function getPackageProviders($app): array
     {
         return [ServerTimingServiceProvider::class];
+    }
+
+    /**
+     * The environment is detected while bootstrapping, before the config
+     * attributes apply, so it is set on the application directly.
+     */
+    protected function useProduction(Application $app): void
+    {
+        $app['env'] = 'production';
     }
 
     #[Test]
@@ -99,7 +108,7 @@ class EloquentSubscriberTest extends TestCase
     }
 
     #[Test]
-    #[WithConfig('app.env', 'production')]
+    #[DefineEnvironment('useProduction')]
     #[WithConfig('timing.measure_queries', true, false)]
     public function it_does_not_measure_queries_in_production(): void
     {

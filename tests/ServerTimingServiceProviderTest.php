@@ -6,6 +6,7 @@ namespace Matchory\ServerTiming\Tests;
 
 use Matchory\ServerTiming\Contracts\ServerTiming as ServerTimingContract;
 use Matchory\ServerTiming\Facades\ServerTiming as ServerTimingFacade;
+use Matchory\ServerTiming\Http\Middleware\ServerTimingMiddleware;
 use Matchory\ServerTiming\ServerTiming;
 use Matchory\ServerTiming\ServerTimingServiceProvider;
 use Orchestra\Testbench\TestCase;
@@ -58,5 +59,23 @@ class ServerTimingServiceProviderTest extends TestCase
             $durations,
             fn(?float $duration) => $duration !== null && floor($duration) !== $duration,
         ));
+    }
+
+    #[Test]
+    public function it_does_not_carry_timings_over_to_the_next_request(): void
+    {
+        $this->app?->make('router')
+            ->middleware(ServerTimingMiddleware::class)
+            ->get('/{metric}', function (string $metric) {
+                ServerTimingFacade::setDuration($metric, 1.0);
+
+                return 'ok';
+            });
+
+        $this->get('/first');
+        $header = (string) $this->get('/second')->headers->get('Server-Timing');
+
+        $this->assertStringContainsString('second', $header);
+        $this->assertStringNotContainsString('first', $header);
     }
 }
