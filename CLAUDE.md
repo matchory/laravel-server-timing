@@ -1,53 +1,15 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Commands are in CONTRIBUTING.md. `tests/ArchitectureTest.php` enforces final classes, strict types, and that only the service provider names the concrete `ServerTiming` (everything else resolves the contract).
 
-## Project
+## Octane state
 
-Laravel package (`matchory/laravel-server-timing`) that adds `Server-Timing` HTTP headers to responses. Uses Symfony Stopwatch internally. Supports Laravel 12/13 and Octane. Requires PHP 8.3+.
+- Subscriber instances outlive Octane requests. A stateful subscriber registers its listeners as `[$this, ...]` and registers `flush()` with `ServerTiming::onReset()`.
+- Subscribers read config once in `subscribe()`, at boot. Exception: `database.default` is read per query, because apps may switch it during a request.
+- Livewire is only a `suggest` dependency; `LivewireSubscriber` must be a no-op without it.
 
-## Commands
+## Test traps
 
-```bash
-composer test             # Run tests (PHPUnit)
-composer fmt              # Format code (Pint, PER preset)
-composer analyze          # Static analysis (PHPStan level 8)
-composer test-coverage    # Tests with HTML coverage report
-```
-
-Run a single test:
-```bash
-./vendor/bin/phpunit --filter test_method_name
-```
-
-## Architecture
-
-All classes are `final`.
-
-**`Contracts\ServerTiming`** — The public API. Everything (middleware, subscribers, facade, helper) resolves the contract, never the concrete class.
-
-**`ServerTiming`** — Default implementation, registered as a singleton; the contract resolves to it via `singletonIf`, so an earlier binding of the contract wins. Wraps Symfony Stopwatch to track named timing events. All durations in milliseconds; `addDuration()` sums into an event. `describe()` stores a description separate from the key (a closure is called when read, so collectors can describe changing counts cheaply). `reset()` runs the callbacks registered with `onReset()`.
-
-**`ServerTimingMiddleware`** — Measures Bootstrap/App/Total (Total is elapsed request time; if registered twice, only the outer one measures), stops all unfinished events, and sets the `Server-Timing` header (slugged, de-duplicated names; escaped descriptions; durations rounded to 3 decimals) plus `Timing-Allow-Origin` if `allow_origin` is set. The header is sent outside production only, unless the static `authorize()` callback (run after the app handled the request) says otherwise; `flushState()` clears it. With `context` enabled, it adds the final timings to Laravel's Context as `server_timing` before the authorization check. Its `terminate()` queues a reset as the last terminating callback, so timings don't carry over to the next request outside Octane.
-
-**`EloquentSubscriber`** — Listens to `QueryExecuted`. Aggregate DB time per connection (`measure_database`; default connection is `Database`, others `Database (name)`) and per-query metrics in non-production (`measure_queries`; numbered `Query N` keys with the SQL, cut to 200 chars, as description; repeats summed with `(xN)`, beyond `max_queries` into `Other queries`).
-
-**`CacheSubscriber`** (`measure_cache`), **`HttpClientSubscriber`** (`measure_http`), **`QueueSubscriber`** (`measure_queue`), **`LivewireSubscriber`** (`measure_livewire`) — Opt-in collectors for cache hits/misses and retrieval time, summed HTTP client request time (timed by a global Guzzle middleware on the client factory, per request until its promise settles), the count of queued jobs, and Livewire render/call time per component (via `Livewire::listen()` finishers; no-op without Livewire, which is only suggested).
-
-**`OctaneSubscriber`** — Resets `ServerTiming` on `WorkerStarting` and `RequestReceived`.
-
-**Per-request state** — Subscriber instances outlive Octane requests. Stateful subscribers register their listeners as `[$this, ...]` (so state lives on the subscribed instance) and register `flush()` with `ServerTiming::onReset()`, which runs on Octane's `RequestReceived` and after each response. Subscribers read config in `subscribe()`, at boot; the exception is `database.default`, read per query because apps may switch it during a request.
-
-**`Facades\ServerTiming`** and **`measure_timing()`** helper — Convenience access to the singleton; `measure_timing()` returns the callable's result.
-
-**Config** published to `config/timing.php` with keys: `enabled`, `measure_database`, `measure_queries`, `max_queries`, `measure_cache`, `measure_http`, `measure_queue`, `measure_livewire`, `context`, `allow_origin`.
-
-## Testing
-
-Uses Orchestra Testbench. Tests use `#[Test]` attributes (not `test` prefix naming). Core class in `ServerTimingTest`, header generation in `Middleware/ServerTimingMiddlewareTest`, one test file per subscriber in `Subscribers/`, plus `MeasureTimingTest` and `ServerTimingServiceProviderTest`.
-
-Subscriber tests set `timing.*` config with `#[WithConfig('timing.…', value, false)]`: the third argument applies it before the provider boots, which is when subscribers read it. The environment is detected before config attributes apply, so production checks set `$app['env']` through `#[DefineEnvironment]`. Middleware tests call `ServerTimingMiddleware::flushState()` in teardown.
-
-## Code Style
-
-PER coding standard via Laravel Pint (`pint.json`). PHPStan at level 8. Strict types throughout. Methods return `$this` for fluent chaining.
+- Set `timing.*` config with `#[WithConfig('timing.…', value, false)]`. The third argument applies it before the provider boots, which is when subscribers read it.
+- The environment is detected before config attributes apply, so production tests set `$app['env']` through `#[DefineEnvironment]`.
+- Middleware tests must call `ServerTimingMiddleware::flushState()` in teardown (static `authorize()` callback).
